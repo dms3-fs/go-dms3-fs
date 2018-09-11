@@ -7,14 +7,14 @@ import (
 	"io"
 	"strings"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	"github.com/ipfs/go-ipfs/core"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
 
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	cid "github.com/dms3-fs/go-cid"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	path "github.com/dms3-fs/go-path"
 )
 
 // KeyList is a general type for outputting lists of keys
@@ -45,7 +45,7 @@ var RefsCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List links (references) from an object.",
 		ShortDescription: `
-Lists the hashes of all the links an IPFS or IPNS object(s) contains,
+Lists the hashes of all the links an DMS3FS or DMS3NS object(s) contains,
 with the following format:
 
   <link base58 hash>
@@ -57,7 +57,7 @@ NOTE: List all references recursively by using the flag '-r'.
 		"local": RefsLocalCmd,
 	},
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("ipfs-path", true, true, "Path to the object(s) to list refs from.").EnableStdin(),
+		cmdkit.StringArg("dms3fs-path", true, true, "Path to the object(s) to list refs from.").EnableStdin(),
 	},
 	Options: []cmdkit.Option{
 		cmdkit.StringOption("format", "Emit edges with given format. Available tokens: <src> <dst> <linkname>.").WithDefault("<dst>"),
@@ -215,8 +215,8 @@ var refsMarshallerMap = cmds.MarshalerMap{
 	},
 }
 
-func objectsForPaths(ctx context.Context, n *core.IpfsNode, paths []string) ([]ipld.Node, error) {
-	objects := make([]ipld.Node, len(paths))
+func objectsForPaths(ctx context.Context, n *core.Dms3FsNode, paths []string) ([]dms3ld.Node, error) {
+	objects := make([]dms3ld.Node, len(paths))
 	for i, sp := range paths {
 		p, err := path.ParsePath(sp)
 		if err != nil {
@@ -239,7 +239,7 @@ type RefWrapper struct {
 
 type RefWriter struct {
 	out chan interface{}
-	DAG ipld.DAGService
+	DAG dms3ld.DAGService
 	Ctx context.Context
 
 	Unique   bool
@@ -250,16 +250,16 @@ type RefWriter struct {
 }
 
 // WriteRefs writes refs of the given object to the underlying writer.
-func (rw *RefWriter) WriteRefs(n ipld.Node) (int, error) {
+func (rw *RefWriter) WriteRefs(n dms3ld.Node) (int, error) {
 	return rw.writeRefsRecursive(n, 0)
 
 }
 
-func (rw *RefWriter) writeRefsRecursive(n ipld.Node, depth int) (int, error) {
+func (rw *RefWriter) writeRefsRecursive(n dms3ld.Node, depth int) (int, error) {
 	nc := n.Cid()
 
 	var count int
-	for i, ng := range ipld.GetDAG(rw.Ctx, rw.DAG, n) {
+	for i, ng := range dms3ld.GetDAG(rw.Ctx, rw.DAG, n) {
 		lc := n.Links()[i].Cid
 		goDeeper, shouldWrite := rw.visit(lc, depth+1) // The children are at depth+1
 

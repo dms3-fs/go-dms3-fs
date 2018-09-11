@@ -1,8 +1,8 @@
 /*
 Package corerepo provides pinning and garbage collection for local
-IPFS block services.
+DMS3FS block services.
 
-IPFS nodes will keep local copies of any object that have either been
+DMS3FS nodes will keep local copies of any object that have either been
 added or requested locally.  Not all of these objects are worth
 preserving forever though, so the node administrator can pin objects
 they want to keep and unpin objects that they don't care about.
@@ -17,15 +17,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ipfs/go-ipfs/core"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
-	resolver "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	path "github.com/dms3-fs/go-path"
+	resolver "github.com/dms3-fs/go-path/resolver"
+	uio "github.com/dms3-fs/go-unixfs/io"
 
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
 )
 
-func Pin(n *core.IpfsNode, ctx context.Context, paths []string, recursive bool) ([]*cid.Cid, error) {
+func Pin(n *core.Dms3FsNode, ctx context.Context, paths []string, recursive bool) ([]*cid.Cid, error) {
 	out := make([]*cid.Cid, len(paths))
 
 	r := &resolver.Resolver{
@@ -58,7 +58,7 @@ func Pin(n *core.IpfsNode, ctx context.Context, paths []string, recursive bool) 
 	return out, nil
 }
 
-func Unpin(n *core.IpfsNode, ctx context.Context, paths []string, recursive bool) ([]*cid.Cid, error) {
+func Unpin(n *core.Dms3FsNode, ctx context.Context, paths []string, recursive bool) ([]*cid.Cid, error) {
 	unpinned := make([]*cid.Cid, len(paths))
 
 	r := &resolver.Resolver{

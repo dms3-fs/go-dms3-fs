@@ -6,14 +6,14 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ipfs/go-ipfs/core"
-	gc "github.com/ipfs/go-ipfs/pin/gc"
-	repo "github.com/ipfs/go-ipfs/repo"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	gc "github.com/dms3-fs/go-dms3-fs/pin/gc"
+	repo "github.com/dms3-fs/go-dms3-fs/repo"
 
-	humanize "gx/ipfs/QmPSBJL4momYnE7DcUyk2DVhD6rH488ZmHBGLbxNdhU44K/go-humanize"
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	mfs "gx/ipfs/QmdghKsSDa2AD1kC4qYRnVYWqZecdSBRZjeXRdhMYYhafj/go-mfs"
+	humanize "github.com/dustin/go-humanize"
+	cid "github.com/dms3-fs/go-cid"
+	logging "github.com/dms3-fs/go-log"
+	mfs "github.com/dms3-fs/go-mfs"
 )
 
 var log = logging.Logger("corerepo")
@@ -21,7 +21,7 @@ var log = logging.Logger("corerepo")
 var ErrMaxStorageExceeded = errors.New("maximum storage limit exceeded. Try to unpin some files")
 
 type GC struct {
-	Node       *core.IpfsNode
+	Node       *core.Dms3FsNode
 	Repo       repo.Repo
 	StorageMax uint64
 	StorageGC  uint64
@@ -29,7 +29,7 @@ type GC struct {
 	Storage    uint64
 }
 
-func NewGC(n *core.IpfsNode) (*GC, error) {
+func NewGC(n *core.Dms3FsNode) (*GC, error) {
 	r := n.Repo
 	cfg, err := r.Config()
 	if err != nil {
@@ -79,7 +79,7 @@ func BestEffortRoots(filesRoot *mfs.Root) ([]*cid.Cid, error) {
 	return []*cid.Cid{rootDag.Cid()}, nil
 }
 
-func GarbageCollect(n *core.IpfsNode, ctx context.Context) error {
+func GarbageCollect(n *core.Dms3FsNode, ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel() // in case error occurs during operation
 	roots, err := BestEffortRoots(n.FilesRoot)
@@ -145,7 +145,7 @@ func (e *MultiError) Error() string {
 	return buf.String()
 }
 
-func GarbageCollectAsync(n *core.IpfsNode, ctx context.Context) <-chan gc.Result {
+func GarbageCollectAsync(n *core.Dms3FsNode, ctx context.Context) <-chan gc.Result {
 	roots, err := BestEffortRoots(n.FilesRoot)
 	if err != nil {
 		out := make(chan gc.Result)
@@ -157,7 +157,7 @@ func GarbageCollectAsync(n *core.IpfsNode, ctx context.Context) <-chan gc.Result
 	return gc.GC(ctx, n.Blockstore, n.Repo.Datastore(), n.Pinning, roots)
 }
 
-func PeriodicGC(ctx context.Context, node *core.IpfsNode) error {
+func PeriodicGC(ctx context.Context, node *core.Dms3FsNode) error {
 	cfg, err := node.Repo.Config()
 	if err != nil {
 		return err
@@ -194,7 +194,7 @@ func PeriodicGC(ctx context.Context, node *core.IpfsNode) error {
 	}
 }
 
-func ConditionalGC(ctx context.Context, node *core.IpfsNode, offset uint64) error {
+func ConditionalGC(ctx context.Context, node *core.Dms3FsNode, offset uint64) error {
 	gc, err := NewGC(node)
 	if err != nil {
 		return err
@@ -220,7 +220,7 @@ func (gc *GC) maybeGC(ctx context.Context, offset uint64) error {
 		if err := GarbageCollect(gc.Node, ctx); err != nil {
 			return err
 		}
-		log.Infof("Repo GC done. See `ipfs repo stat` to see how much space got freed.\n")
+		log.Infof("Repo GC done. See `dms3fs repo stat` to see how much space got freed.\n")
 	}
 	return nil
 }

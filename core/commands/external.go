@@ -8,9 +8,9 @@ import (
 	"os/exec"
 	"strings"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
 )
 
 func ExternalBinary() *cmds.Command {
@@ -20,7 +20,7 @@ func ExternalBinary() *cmds.Command {
 		},
 		External: true,
 		Run: func(req cmds.Request, res cmds.Response) {
-			binname := strings.Join(append([]string{"ipfs"}, req.Path()...), "-")
+			binname := strings.Join(append([]string{"dms3fs"}, req.Path()...), "-")
 			_, err := exec.LookPath(binname)
 			if err != nil {
 				// special case for '--help' on uninstalled binaries.
@@ -29,7 +29,7 @@ func ExternalBinary() *cmds.Command {
 						buf := new(bytes.Buffer)
 						fmt.Fprintf(buf, "%s is an 'external' command.\n", binname)
 						fmt.Fprintf(buf, "It does not currently appear to be installed.\n")
-						fmt.Fprintf(buf, "Please refer to the ipfs documentation for instructions.\n")
+						fmt.Fprintf(buf, "Please refer to the dms3fs documentation for instructions.\n")
 						res.SetOutput(buf)
 						return
 					}
@@ -57,12 +57,12 @@ func ExternalBinary() *cmds.Command {
 				nd, err := req.InvocContext().GetNode()
 				if err != nil {
 					res.SetError(fmt.Errorf(
-						"failed to start ipfs node: %s",
+						"failed to start dms3fs node: %s",
 						err,
 					), cmdkit.ErrFatal)
 					return
 				}
-				env = append(env, fmt.Sprintf("IPFS_ONLINE=%t", nd.OnlineMode()))
+				env = append(env, fmt.Sprintf("DMS3FS_ONLINE=%t", nd.OnlineMode()))
 			}
 
 			cmd.Env = env

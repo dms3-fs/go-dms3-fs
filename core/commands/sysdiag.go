@@ -5,12 +5,12 @@ import (
 	"path"
 	"runtime"
 
-	version "github.com/ipfs/go-ipfs"
-	cmds "github.com/ipfs/go-ipfs/commands"
+	version "github.com/dms3-fs/go-dms3-fs"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	manet "gx/ipfs/QmV6FjemM1K8oXjrvuq3wuVWWoU2TLDPmNnKrxHzY3v6Ai/go-multiaddr-net"
-	sysi "gx/ipfs/QmZRjKbHa6DenStpQJFiaPcEwkZqrx7TH6xTf342LDU3qM/go-sysinfo"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	manet "github.com/dms3-mft/go-multiaddr-net"
+	sysi "github.com/whyrusleeping/go-sysinfo"
 )
 
 var sysDiagCmd = &cmds.Command{
@@ -57,8 +57,8 @@ Prints out information about your computer to aid in easier debugging.
 			return
 		}
 
-		info["ipfs_version"] = version.CurrentVersionNumber
-		info["ipfs_commit"] = version.CurrentCommit
+		info["dms3fs_version"] = version.CurrentVersionNumber
+		info["dms3fs_commit"] = version.CurrentCommit
 		res.SetOutput(info)
 	},
 }
@@ -80,23 +80,23 @@ func runtimeInfo(out map[string]interface{}) error {
 func envVarInfo(out map[string]interface{}) error {
 	ev := make(map[string]interface{})
 	ev["GOPATH"] = os.Getenv("GOPATH")
-	ev["IPFS_PATH"] = os.Getenv("IPFS_PATH")
+	ev["DMS3FS_PATH"] = os.Getenv("DMS3FS_PATH")
 
 	out["environment"] = ev
 	return nil
 }
 
-func ipfsPath() string {
-	p := os.Getenv("IPFS_PATH")
+func dms3fsPath() string {
+	p := os.Getenv("DMS3FS_PATH")
 	if p == "" {
-		p = path.Join(os.Getenv("HOME"), ".ipfs")
+		p = path.Join(os.Getenv("HOME"), ".dms3-fs")
 	}
 	return p
 }
 
 func diskSpaceInfo(out map[string]interface{}) error {
 	di := make(map[string]interface{})
-	dinfo, err := sysi.DiskUsage(ipfsPath())
+	dinfo, err := sysi.DiskUsage(dms3fsPath())
 	if err != nil {
 		return err
 	}

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	testutil "gx/ipfs/QmRNhSdqzMcuRxX9A1egBeQ3BhDTguDV5HPwi8wRykkPU8/go-testutil"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	config "github.com/dms3-p2p/go-fs-config"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	testutil "github.com/dms3-p2p/go-testutil"
 )
 
 func TestSubsetWhenMaxIsGreaterThanLengthOfSlice(t *testing.T) {
@@ -34,13 +34,13 @@ func TestMultipleAddrsPerPeer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/5001/ipfs/%s", pid.Pretty())
+		addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/5101/dms3fs/%s", pid.Pretty())
 		bsp1, err := config.ParseBootstrapPeer(addr)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		addr = fmt.Sprintf("/ip4/127.0.0.1/udp/5002/utp/ipfs/%s", pid.Pretty())
+		addr = fmt.Sprintf("/ip4/127.0.0.1/udp/5102/utp/dms3fs/%s", pid.Pretty())
 		bsp2, err := config.ParseBootstrapPeer(addr)
 		if err != nil {
 			t.Fatal(err)

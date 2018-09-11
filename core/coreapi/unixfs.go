@@ -4,12 +4,12 @@ import (
 	"context"
 	"io"
 
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	coreunix "github.com/dms3-fs/go-dms3-fs/core/coreunix"
+	uio "github.com/dms3-fs/go-unixfs/io"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 type UnixfsAPI CoreAPI
@@ -25,10 +25,10 @@ func (api *UnixfsAPI) Add(ctx context.Context, r io.Reader) (coreiface.ResolvedP
 	if err != nil {
 		return nil, err
 	}
-	return coreiface.IpfsPath(c), nil
+	return coreiface.Dms3FsPath(c), nil
 }
 
-// Cat returns the data contained by an IPFS or IPNS object(s) at path `p`.
+// Cat returns the data contained by an DMS3FS or DMS3NS object(s) at path `p`.
 func (api *UnixfsAPI) Cat(ctx context.Context, p coreiface.Path) (coreiface.Reader, error) {
 	dget := api.node.DAG // TODO: use a session here once routing perf issues are resolved
 
@@ -46,15 +46,15 @@ func (api *UnixfsAPI) Cat(ctx context.Context, p coreiface.Path) (coreiface.Read
 	return r, nil
 }
 
-// Ls returns the contents of an IPFS or IPNS object(s) at path p, with the format:
+// Ls returns the contents of an DMS3FS or DMS3NS object(s) at path p, with the format:
 // `<link base58 hash> <link size in bytes> <link name>`
-func (api *UnixfsAPI) Ls(ctx context.Context, p coreiface.Path) ([]*ipld.Link, error) {
+func (api *UnixfsAPI) Ls(ctx context.Context, p coreiface.Path) ([]*dms3ld.Link, error) {
 	dagnode, err := api.core().ResolveNode(ctx, p)
 	if err != nil {
 		return nil, err
 	}
 
-	var ndlinks []*ipld.Link
+	var ndlinks []*dms3ld.Link
 	dir, err := uio.NewDirectoryFromNode(api.node.DAG, dagnode)
 	switch err {
 	case nil:
@@ -69,9 +69,9 @@ func (api *UnixfsAPI) Ls(ctx context.Context, p coreiface.Path) ([]*ipld.Link, e
 		return nil, err
 	}
 
-	links := make([]*ipld.Link, len(ndlinks))
+	links := make([]*dms3ld.Link, len(ndlinks))
 	for i, l := range ndlinks {
-		links[i] = &ipld.Link{Name: l.Name, Size: l.Size, Cid: l.Cid}
+		links[i] = &dms3ld.Link{Name: l.Name, Size: l.Size, Cid: l.Cid}
 	}
 	return links, nil
 }

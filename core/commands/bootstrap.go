@@ -6,13 +6,13 @@ import (
 	"io"
 	"sort"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	repo "github.com/ipfs/go-ipfs/repo"
-	"github.com/ipfs/go-ipfs/repo/fsrepo"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	repo "github.com/dms3-fs/go-dms3-fs/repo"
+	"github.com/dms3-fs/go-dms3-fs/repo/fsrepo"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 type BootstrapOutput struct {
@@ -25,7 +25,7 @@ var BootstrapCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Show or edit the list of bootstrap peers.",
 		ShortDescription: `
-Running 'ipfs bootstrap' with no arguments will run 'ipfs bootstrap list'.
+Running 'dms3fs bootstrap' with no arguments will run 'dms3fs bootstrap list'.
 ` + bootstrapSecurityWarning,
 	},
 

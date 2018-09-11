@@ -6,9 +6,9 @@ import (
 	"io"
 	"testing"
 
-	oldcmds "github.com/ipfs/go-ipfs/commands"
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
 )
 
 type WriteNopCloser struct {

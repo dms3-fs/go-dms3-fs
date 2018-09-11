@@ -7,60 +7,60 @@ import (
 	"io"
 	"time"
 
-	core "github.com/ipfs/go-ipfs/core"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	keystore "github.com/ipfs/go-ipfs/keystore"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	keystore "github.com/dms3-fs/go-dms3-fs/keystore"
 
-	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	crypto "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmds"
+	path "github.com/dms3-fs/go-path"
+	crypto "github.com/dms3-p2p/go-p2p-crypto"
+	peer "github.com/dms3-p2p/go-p2p-peer"
 )
 
 var PublishCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Publish IPNS names.",
+		Tagline: "Publish DMS3NS names.",
 		ShortDescription: `
-IPNS is a PKI namespace, where names are the hashes of public keys, and
+DMS3NS is a PKI namespace, where names are the hashes of public keys, and
 the private key enables publishing new (signed) values. In both publish
 and resolve, the default name used is the node's own PeerID,
 which is the hash of its public key.
 `,
 		LongDescription: `
-IPNS is a PKI namespace, where names are the hashes of public keys, and
+DMS3NS is a PKI namespace, where names are the hashes of public keys, and
 the private key enables publishing new (signed) values. In both publish
 and resolve, the default name used is the node's own PeerID,
 which is the hash of its public key.
 
-You can use the 'ipfs key' commands to list and generate more names and their
+You can use the 'dms3fs key' commands to list and generate more names and their
 respective keys.
 
 Examples:
 
-Publish an <ipfs-path> with your default name:
+Publish an <dms3fs-path> with your default name:
 
-  > ipfs name publish /ipfs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
-  Published to QmbCMUZw6JFeZ7Wp9jkzbye3Fzp2GGcPgC3nmeUjfVF87n: /ipfs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
+  > dms3fs name publish /dms3fs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
+  Published to QmbCMUZw6JFeZ7Wp9jkzbye3Fzp2GGcPgC3nmeUjfVF87n: /dms3fs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
 
-Publish an <ipfs-path> with another name, added by an 'ipfs key' command:
+Publish an <dms3fs-path> with another name, added by an 'dms3fs key' command:
 
-  > ipfs key gen --type=rsa --size=2048 mykey
-  > ipfs name publish --key=mykey /ipfs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
-  Published to QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd: /ipfs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
+  > dms3fs key gen --type=rsa --size=2048 mykey
+  > dms3fs name publish --key=mykey /dms3fs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
+  Published to QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd: /dms3fs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
 
-Alternatively, publish an <ipfs-path> using a valid PeerID (as listed by 
-'ipfs key list -l'):
+Alternatively, publish an <dms3fs-path> using a valid PeerID (as listed by
+'dms3fs key list -l'):
 
- > ipfs name publish --key=QmbCMUZw6JFeZ7Wp9jkzbye3Fzp2GGcPgC3nmeUjfVF87n /ipfs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
-  Published to QmbCMUZw6JFeZ7Wp9jkzbye3Fzp2GGcPgC3nmeUjfVF87n: /ipfs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
+ > dms3fs name publish --key=QmbCMUZw6JFeZ7Wp9jkzbye3Fzp2GGcPgC3nmeUjfVF87n /dms3fs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
+  Published to QmbCMUZw6JFeZ7Wp9jkzbye3Fzp2GGcPgC3nmeUjfVF87n: /dms3fs/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
 
 `,
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("ipfs-path", true, false, "ipfs path of the object to be published.").EnableStdin(),
+		cmdkit.StringArg("dms3fs-path", true, false, "dms3fs path of the object to be published.").EnableStdin(),
 	},
 	Options: []cmdkit.Option{
 		cmdkit.BoolOption("resolve", "Resolve given path before publishing.").WithDefault(true),
@@ -69,7 +69,7 @@ Alternatively, publish an <ipfs-path> using a valid PeerID (as listed by
     This accepts durations such as "300s", "1.5h" or "2h45m". Valid time units are
     "ns", "us" (or "µs"), "ms", "s", "m", "h".`).WithDefault("24h"),
 		cmdkit.StringOption("ttl", "Time duration this record should be cached for (caution: experimental)."),
-		cmdkit.StringOption("key", "k", "Name of the key to be used or a valid PeerID, as listed by 'ipfs key list -l'. Default: <<default>>.").WithDefault("self"),
+		cmdkit.StringOption("key", "k", "Name of the key to be used or a valid PeerID, as listed by 'dms3fs key list -l'. Default: <<default>>.").WithDefault("self"),
 	},
 	Run: func(req *cmds.Request, res cmds.ResponseEmitter, env cmds.Environment) {
 		n, err := cmdenv.GetNode(env)
@@ -86,8 +86,8 @@ Alternatively, publish an <ipfs-path> using a valid PeerID (as listed by
 			}
 		}
 
-		if n.Mounts.Ipns != nil && n.Mounts.Ipns.IsActive() {
-			res.SetError(errors.New("cannot manually publish while IPNS is mounted"), cmdkit.ErrNormal)
+		if n.Mounts.Dms3Ns != nil && n.Mounts.Dms3Ns.IsActive() {
+			res.SetError(errors.New("cannot manually publish while DMS3NS is mounted"), cmdkit.ErrNormal)
 			return
 		}
 
@@ -119,7 +119,7 @@ Alternatively, publish an <ipfs-path> using a valid PeerID (as listed by
 				return
 			}
 
-			ctx = context.WithValue(ctx, "ipns-publish-ttl", d)
+			ctx = context.WithValue(ctx, "dms3ns-publish-ttl", d)
 		}
 
 		kname, _ := req.Options["key"].(string)
@@ -144,7 +144,7 @@ Alternatively, publish an <ipfs-path> using a valid PeerID (as listed by
 	},
 	Encoders: cmds.EncoderMap{
 		cmds.Text: cmds.MakeEncoder(func(req *cmds.Request, w io.Writer, v interface{}) error {
-			entry, ok := v.(*IpnsEntry)
+			entry, ok := v.(*Dms3NsEntry)
 			if !ok {
 				return e.TypeErr(entry, v)
 			}
@@ -153,7 +153,7 @@ Alternatively, publish an <ipfs-path> using a valid PeerID (as listed by
 			return err
 		}),
 	},
-	Type: IpnsEntry{},
+	Type: Dms3NsEntry{},
 }
 
 type publishOpts struct {
@@ -161,7 +161,7 @@ type publishOpts struct {
 	pubValidTime time.Duration
 }
 
-func publish(ctx context.Context, n *core.IpfsNode, k crypto.PrivKey, ref path.Path, opts *publishOpts) (*IpnsEntry, error) {
+func publish(ctx context.Context, n *core.Dms3FsNode, k crypto.PrivKey, ref path.Path, opts *publishOpts) (*Dms3NsEntry, error) {
 
 	if opts.verifyExists {
 		// verify the path exists
@@ -182,13 +182,13 @@ func publish(ctx context.Context, n *core.IpfsNode, k crypto.PrivKey, ref path.P
 		return nil, err
 	}
 
-	return &IpnsEntry{
+	return &Dms3NsEntry{
 		Name:  pid.Pretty(),
 		Value: ref.String(),
 	}, nil
 }
 
-func keylookup(n *core.IpfsNode, k string) (crypto.PrivKey, error) {
+func keylookup(n *core.Dms3FsNode, k string) (crypto.PrivKey, error) {
 
 	res, err := n.GetKey(k)
 	if res != nil {

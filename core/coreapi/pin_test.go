@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	opt "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 )
 
 func TestPinAdd(t *testing.T) {

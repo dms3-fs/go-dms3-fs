@@ -10,14 +10,14 @@ import (
 	"path"
 	"testing"
 
-	"github.com/ipfs/go-ipfs/Godeps/_workspace/src/github.com/jbenet/go-random"
-	"github.com/ipfs/go-ipfs/thirdparty/unit"
+	"github.com/dms3-fs/go-dms3-fs/Godeps/_workspace/src/github.com/jbenet/go-random"
+	"github.com/dms3-fs/go-dms3-fs/thirdparty/unit"
 
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 var (
-	debug  = flag.Bool("debug", false, "direct ipfs output to console")
+	debug  = flag.Bool("debug", false, "direct dms3fs output to console")
 	online = flag.Bool("online", false, "run the benchmarks with a running daemon")
 )
 
@@ -65,7 +65,7 @@ func benchmarkAdd(amount int64) (*testing.BenchmarkResult, error) {
 				}
 			}
 
-			initCmd := exec.Command("ipfs", "init", "-b=1024")
+			initCmd := exec.Command("dms3fs", "init", "-b=1024")
 			setupCmd(initCmd)
 			if err := initCmd.Run(); err != nil {
 				benchmarkError = err
@@ -89,7 +89,7 @@ func benchmarkAdd(amount int64) (*testing.BenchmarkResult, error) {
 			func() {
 				// FIXME online mode isn't working. client complains that it cannot open leveldb
 				if *online {
-					daemonCmd := exec.Command("ipfs", "daemon")
+					daemonCmd := exec.Command("dms3fs", "daemon")
 					setupCmd(daemonCmd)
 					if err := daemonCmd.Start(); err != nil {
 						benchmarkError = err
@@ -100,7 +100,7 @@ func benchmarkAdd(amount int64) (*testing.BenchmarkResult, error) {
 				}
 
 				b.StartTimer()
-				addCmd := exec.Command("ipfs", "add", f.Name())
+				addCmd := exec.Command("dms3fs", "add", f.Name())
 				setupCmd(addCmd)
 				if err := addCmd.Run(); err != nil {
 					benchmarkError = err

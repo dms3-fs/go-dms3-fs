@@ -4,20 +4,20 @@ import (
 	"io"
 	"strings"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	core "github.com/ipfs/go-ipfs/core"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	"github.com/ipfs/go-ipfs/core/coreunix"
-	tar "github.com/ipfs/go-ipfs/tar"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	"github.com/dms3-fs/go-dms3-fs/core/coreunix"
+	tar "github.com/dms3-fs/go-dms3-fs/tar"
+	dag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
 )
 
 var TarCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Utility functions for tar files in ipfs.",
+		Tagline: "Utility functions for tar files in dms3fs.",
 	},
 
 	Subcommands: map[string]*cmds.Command{
@@ -28,9 +28,9 @@ var TarCmd = &cmds.Command{
 
 var tarAddCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Import a tar file into ipfs.",
+		Tagline: "Import a tar file into dms3fs.",
 		ShortDescription: `
-'ipfs tar add' will parse a tar file and create a merkledag structure to
+'dms3fs tar add' will parse a tar file and create a merkledag structure to
 represent it.
 `,
 	},
@@ -84,14 +84,14 @@ represent it.
 
 var tarCatCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Export a tar file from IPFS.",
+		Tagline: "Export a tar file from DMS3FS.",
 		ShortDescription: `
-'ipfs tar cat' will export a tar file from a previously imported one in IPFS.
+'dms3fs tar cat' will export a tar file from a previously imported one in DMS3FS.
 `,
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("path", true, false, "ipfs path of archive to export.").EnableStdin(),
+		cmdkit.StringArg("path", true, false, "dms3fs path of archive to export.").EnableStdin(),
 	},
 	Run: func(req cmds.Request, res cmds.Response) {
 		nd, err := req.InvocContext().GetNode()

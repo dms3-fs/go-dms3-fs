@@ -7,27 +7,27 @@ import (
 	"math"
 	"strings"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	coredag "github.com/ipfs/go-ipfs/core/coredag"
-	pin "github.com/ipfs/go-ipfs/pin"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	coredag "github.com/dms3-fs/go-dms3-fs/core/coredag"
+	pin "github.com/dms3-fs/go-dms3-fs/pin"
+	path "github.com/dms3-fs/go-path"
 
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	files "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit/files"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	files "github.com/dms3-fs/go-fs-cmdkit/files"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
 var DagCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Interact with ipld dag objects.",
+		Tagline: "Interact with dms3ld dag objects.",
 		ShortDescription: `
-'ipfs dag' is used for creating and manipulating dag objects.
+'dms3fs dag' is used for creating and manipulating dag objects.
 
 This subcommand is currently an experimental feature, but it is intended
-to deprecate and replace the existing 'ipfs object' command moving forward.
+to deprecate and replace the existing 'dms3fs object' command moving forward.
 		`,
 	},
 	Subcommands: map[string]*cmds.Command{
@@ -50,9 +50,9 @@ type ResolveOutput struct {
 
 var DagPutCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Add a dag node to ipfs.",
+		Tagline: "Add a dag node to dms3fs.",
 		ShortDescription: `
-'ipfs dag put' accepts input from a file or stdin and parses it
+'dms3fs dag put' accepts input from a file or stdin and parses it
 into an object of the specified format.
 `,
 	},
@@ -100,7 +100,7 @@ into an object of the specified format.
 
 		addAllAndPin := func(f files.File) error {
 			cids := cid.NewSet()
-			b := ipld.NewBatch(req.Context(), n.DAG)
+			b := dms3ld.NewBatch(req.Context(), n.DAG)
 
 			for {
 				file, err := f.NextFile()
@@ -185,9 +185,9 @@ into an object of the specified format.
 
 var DagGetCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Get a dag node from ipfs.",
+		Tagline: "Get a dag node from dms3fs.",
 		ShortDescription: `
-'ipfs dag get' fetches a dag node from ipfs and prints it out in the specified
+'dms3fs dag get' fetches a dag node from dms3fs and prints it out in the specified
 format.
 `,
 	},
@@ -235,9 +235,9 @@ format.
 // DagResolveCmd returns address of highest block within a path and a path remainder
 var DagResolveCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Resolve ipld block",
+		Tagline: "Resolve dms3ld block",
 		ShortDescription: `
-'ipfs dag resolve' fetches a dag node from ipfs, prints it's address and remaining path.
+'dms3fs dag resolve' fetches a dag node from dms3fs, prints it's address and remaining path.
 `,
 	},
 	Arguments: []cmdkit.Argument{

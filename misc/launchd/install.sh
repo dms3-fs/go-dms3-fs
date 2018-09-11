@@ -1,32 +1,32 @@
 #!/bin/bash
 
 src_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-plist=io.ipfs.ipfs-daemon.plist
+plist=io.dms3.dms3fs-daemon.plist
 dest_dir="$HOME/Library/LaunchAgents"
-IPFS_PATH="${IPFS_PATH:-$HOME/.ipfs}"
-escaped_ipfs_path=$(echo $IPFS_PATH|sed 's/\//\\\//g')
+DMS3FS_PATH="${DMS3FS_PATH:-$HOME/.dms3-fs}"
+escaped_dms3fs_path=$(echo $DMS3FS_PATH|sed 's/\//\\\//g')
 
-IPFS_BIN=$(which ipfs || echo ipfs)
-escaped_ipfs_bin=$(echo $IPFS_BIN|sed 's/\//\\\//g')
+DMS3FS_BIN=$(which dms3fs || echo dms3fs)
+escaped_dms3fs_bin=$(echo $DMS3FS_BIN|sed 's/\//\\\//g')
 
 mkdir -p "$dest_dir"
 
-sed -e 's/{{IPFS_PATH}}/'"$escaped_ipfs_path"'/g' \
-  -e 's/{{IPFS_BIN}}/'"$escaped_ipfs_bin"'/g' \
+sed -e 's/{{DMS3FS_PATH}}/'"$escaped_dms3fs_path"'/g' \
+  -e 's/{{DMS3FS_BIN}}/'"$escaped_dms3fs_bin"'/g' \
   "$src_dir/$plist" \
   > "$dest_dir/$plist"
 
-launchctl list | grep ipfs-daemon >/dev/null
+launchctl list | grep dms3fs-daemon >/dev/null
 if [ $? ]; then
-  echo Unloading existing ipfs-daemon
+  echo Unloading existing dms3fs-daemon
   launchctl unload "$dest_dir/$plist"
 fi
 
-echo Loading ipfs-daemon
+echo Loading dms3fs-daemon
 if (( `sw_vers -productVersion | cut -d'.' -f2` > 9 )); then
   sudo chown root "$dest_dir/$plist"
   sudo launchctl bootstrap system "$dest_dir/$plist"
 else
   launchctl load "$dest_dir/$plist"
 fi
-launchctl list | grep ipfs-daemon
+launchctl list | grep dms3fs-daemon

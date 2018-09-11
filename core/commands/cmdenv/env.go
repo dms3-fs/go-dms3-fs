@@ -3,16 +3,16 @@ package cmdenv
 import (
 	"fmt"
 
-	"github.com/ipfs/go-ipfs/commands"
-	"github.com/ipfs/go-ipfs/core"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
+	"github.com/dms3-fs/go-dms3-fs/commands"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 // GetNode extracts the node from the environment.
-func GetNode(env interface{}) (*core.IpfsNode, error) {
+func GetNode(env interface{}) (*core.Dms3FsNode, error) {
 	ctx, ok := env.(*commands.Context)
 	if !ok {
 		return nil, fmt.Errorf("expected env to be of type %T, got %T", ctx, env)

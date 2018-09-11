@@ -6,10 +6,10 @@ import (
 
 	context "context"
 
-	"github.com/ipfs/go-ipfs/core"
-	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	fsrepo "github.com/dms3-fs/go-dms3-fs/repo/fsrepo"
 
-	humanize "gx/ipfs/QmPSBJL4momYnE7DcUyk2DVhD6rH488ZmHBGLbxNdhU44K/go-humanize"
+	humanize "github.com/dustin/go-humanize"
 )
 
 // SizeStat wraps information about the repository size and its limit.
@@ -30,7 +30,7 @@ type Stat struct {
 const NoLimit uint64 = math.MaxUint64
 
 // RepoStat returns a *Stat object with all the fields set.
-func RepoStat(ctx context.Context, n *core.IpfsNode) (Stat, error) {
+func RepoStat(ctx context.Context, n *core.Dms3FsNode) (Stat, error) {
 	sizeStat, err := RepoSize(ctx, n)
 	if err != nil {
 		return Stat{}, err
@@ -63,7 +63,7 @@ func RepoStat(ctx context.Context, n *core.IpfsNode) (Stat, error) {
 }
 
 // RepoSize returns a *Stat object with the RepoSize and StorageMax fields set.
-func RepoSize(ctx context.Context, n *core.IpfsNode) (SizeStat, error) {
+func RepoSize(ctx context.Context, n *core.Dms3FsNode) (SizeStat, error) {
 	r := n.Repo
 
 	cfg, err := r.Config()

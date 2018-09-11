@@ -5,20 +5,20 @@ import (
 	fmt "fmt"
 	gopath "path"
 
-	core "github.com/ipfs/go-ipfs/core"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	namesys "github.com/ipfs/go-ipfs/namesys"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	ipfspath "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
-	resolver "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	namesys "github.com/dms3-fs/go-dms3-fs/namesys"
+	dms3fspath "github.com/dms3-fs/go-path"
+	resolver "github.com/dms3-fs/go-path/resolver"
+	uio "github.com/dms3-fs/go-unixfs/io"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 // ResolveNode resolves the path `p` using Unixfs resolver, gets and returns the
 // resolved Node.
-func (api *CoreAPI) ResolveNode(ctx context.Context, p coreiface.Path) (ipld.Node, error) {
+func (api *CoreAPI) ResolveNode(ctx context.Context, p coreiface.Path) (dms3ld.Node, error) {
 	return resolveNode(ctx, api.node.DAG, api.node.Namesys, p)
 }
 
@@ -28,7 +28,7 @@ func (api *CoreAPI) ResolvePath(ctx context.Context, p coreiface.Path) (coreifac
 	return resolvePath(ctx, api.node.DAG, api.node.Namesys, p)
 }
 
-func resolveNode(ctx context.Context, ng ipld.NodeGetter, nsys namesys.NameSystem, p coreiface.Path) (ipld.Node, error) {
+func resolveNode(ctx context.Context, ng dms3ld.NodeGetter, nsys namesys.NameSystem, p coreiface.Path) (dms3ld.Node, error) {
 	rp, err := resolvePath(ctx, ng, nsys, p)
 	if err != nil {
 		return nil, err
@@ -41,13 +41,13 @@ func resolveNode(ctx context.Context, ng ipld.NodeGetter, nsys namesys.NameSyste
 	return node, nil
 }
 
-func resolvePath(ctx context.Context, ng ipld.NodeGetter, nsys namesys.NameSystem, p coreiface.Path) (coreiface.ResolvedPath, error) {
+func resolvePath(ctx context.Context, ng dms3ld.NodeGetter, nsys namesys.NameSystem, p coreiface.Path) (coreiface.ResolvedPath, error) {
 	if _, ok := p.(coreiface.ResolvedPath); ok {
 		return p.(coreiface.ResolvedPath), nil
 	}
 
-	ipath := ipfspath.Path(p.String())
-	ipath, err := core.ResolveIPNS(ctx, nsys, ipath)
+	ipath := dms3fspath.Path(p.String())
+	ipath, err := core.ResolveDMS3NS(ctx, nsys, ipath)
 	if err == core.ErrNoNamesys {
 		return nil, coreiface.ErrOffline
 	} else if err != nil {
@@ -57,9 +57,9 @@ func resolvePath(ctx context.Context, ng ipld.NodeGetter, nsys namesys.NameSyste
 	var resolveOnce resolver.ResolveOnce
 
 	switch ipath.Segments()[0] {
-	case "ipfs":
+	case "dms3fs":
 		resolveOnce = uio.ResolveUnixfsOnce
-	case "ipld":
+	case "dms3ld":
 		resolveOnce = resolver.ResolveSingle
 	default:
 		return nil, fmt.Errorf("unsupported path namespace: %s", p.Namespace())

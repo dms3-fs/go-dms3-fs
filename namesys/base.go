@@ -6,8 +6,8 @@ import (
 
 	context "context"
 
-	opts "github.com/ipfs/go-ipfs/namesys/opts"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	opts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
+	path "github.com/dms3-fs/go-path"
 )
 
 type resolver interface {
@@ -25,8 +25,8 @@ func resolve(ctx context.Context, r resolver, name string, options *opts.Resolve
 		}
 		log.Debugf("resolved %s to %s", name, p.String())
 
-		if strings.HasPrefix(p.String(), "/ipfs/") {
-			// we've bottomed out with an IPFS path
+		if strings.HasPrefix(p.String(), "/dms3fs/") {
+			// we've bottomed out with an DMS3FS path
 			return p, nil
 		}
 

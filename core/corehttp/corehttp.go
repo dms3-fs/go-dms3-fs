@@ -1,6 +1,6 @@
 /*
 Package corehttp provides utilities for the webui, gateways, and other
-high-level HTTP interfaces to IPFS.
+high-level HTTP interfaces to DMS3FS.
 */
 package corehttp
 
@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"time"
 
-	core "github.com/ipfs/go-ipfs/core"
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	"gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
-	periodicproc "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/periodic"
-	manet "gx/ipfs/QmV6FjemM1K8oXjrvuq3wuVWWoU2TLDPmNnKrxHzY3v6Ai/go-multiaddr-net"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	logging "github.com/dms3-fs/go-log"
+	"github.com/jbenet/goprocess"
+	periodicproc "github.com/jbenet/goprocess/periodic"
+	ma "github.com/dms3-mft/go-multiaddr"
+	manet "github.com/dms3-mft/go-multiaddr-net"
 )
 
 var log = logging.Logger("core/server")
@@ -29,11 +29,11 @@ const shutdownTimeout = 30 * time.Second
 // It returns the mux to expose to future options, which may be a new mux if it
 // is interested in mediating requests to future options, or the same mux
 // initially passed in if not.
-type ServeOption func(*core.IpfsNode, net.Listener, *http.ServeMux) (*http.ServeMux, error)
+type ServeOption func(*core.Dms3FsNode, net.Listener, *http.ServeMux) (*http.ServeMux, error)
 
 // makeHandler turns a list of ServeOptions into a http.Handler that implements
 // all of the given options, in order.
-func makeHandler(n *core.IpfsNode, l net.Listener, options ...ServeOption) (http.Handler, error) {
+func makeHandler(n *core.Dms3FsNode, l net.Listener, options ...ServeOption) (http.Handler, error) {
 	topMux := http.NewServeMux()
 	mux := topMux
 	for _, option := range options {
@@ -51,8 +51,8 @@ func makeHandler(n *core.IpfsNode, l net.Listener, options ...ServeOption) (http
 //
 // TODO intelligently parse address strings in other formats so long as they
 // unambiguously map to a valid multiaddr. e.g. for convenience, ":8080" should
-// map to "/ip4/0.0.0.0/tcp/8080".
-func ListenAndServe(n *core.IpfsNode, listeningMultiAddr string, options ...ServeOption) error {
+// map to "/ip4/0.0.0.0/tcp/8180".
+func ListenAndServe(n *core.Dms3FsNode, listeningMultiAddr string, options ...ServeOption) error {
 	addr, err := ma.NewMultiaddr(listeningMultiAddr)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func ListenAndServe(n *core.IpfsNode, listeningMultiAddr string, options ...Serv
 	return Serve(n, manet.NetListener(list), options...)
 }
 
-func Serve(node *core.IpfsNode, lis net.Listener, options ...ServeOption) error {
+func Serve(node *core.Dms3FsNode, lis net.Listener, options ...ServeOption) error {
 	// make sure we close this no matter what.
 	defer lis.Close()
 

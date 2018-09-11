@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	core "github.com/ipfs/go-ipfs/core"
+	core "github.com/dms3-fs/go-dms3-fs/core"
 
-	swarmt "gx/ipfs/QmPWNZRUybw3nwJH3mpkrwB97YEQmXRkzvyh34rpJiih6Q/go-libp2p-swarm/testing"
-	bhost "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/host/basic"
-	inet "gx/ipfs/QmX5J1q63BrrDTbpcHifrFbxH3cMZsvaNajy6u3zCpzBXs/go-libp2p-net"
+	inet "github.com/dms3-p2p/go-p2p-net"
+	swarmt "github.com/dms3-p2p/go-p2p-swarm/testing"
+	bhost "github.com/dms3-p2p/go-p2p/p2p/host/basic"
 )
 
-// This test is based on go-libp2p/p2p/net/swarm.TestConnectednessCorrect
+// This test is based on go-p2p/p2p/net/swarm.TestConnectednessCorrect
 // It builds 4 nodes and connects them, one being the sole center.
 // Then it checks that the center reports the correct number of peers.
 func TestPeersTotal(t *testing.T) {
@@ -38,8 +38,8 @@ func TestPeersTotal(t *testing.T) {
 	// completely. there must be some async stuff.
 	<-time.After(100 * time.Millisecond)
 
-	node := &core.IpfsNode{PeerHost: hosts[0]}
-	collector := IpfsNodeCollector{Node: node}
+	node := &core.Dms3FsNode{PeerHost: hosts[0]}
+	collector := Dms3FsNodeCollector{Node: node}
 	actual := collector.PeersTotalValues()
 	if len(actual) != 1 {
 		t.Fatalf("expected 1 peers transport, got %d", len(actual))

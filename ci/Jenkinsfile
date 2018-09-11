@@ -66,9 +66,9 @@ def gobuild_step = { list ->
       list.each { platform ->
         timeout(time: check_timeout, unit: 'MINUTES') {
           withEnv(["GOOS=${platform[0]}", "GOARCH=${platform[1]}"]) {
-            run "go build -i -ldflags=\"-X github.com/ipfs/go-ipfs/repo/config.CurrentCommit=${env.SUBNAME}-${env.BUILD_NUMBER}\"  -o cmd/ipfs/ipfs github.com/ipfs/go-ipfs/cmd/ipfs"
-            run "cp cmd/ipfs/ipfs cmd/ipfs/dist; cd cmd/ipfs/dist; tar -czvf ../go-ipfs_${env.GOOS}-${env.GOARCH}-${env.SUBNAME}-${env.BUILD_NUMBER}.tar.gz ."
-            archiveArtifacts artifacts: "cmd/ipfs/go-ipfs_${env.GOOS}-${env.GOARCH}-${env.SUBNAME}-${env.BUILD_NUMBER}.tar.gz", fingerprint: true
+            run "go build -i -ldflags=\"-X github.com/dms3-fs/go-dms3-fs/repo/config.CurrentCommit=${env.SUBNAME}-${env.BUILD_NUMBER}\"  -o cmd/dms3fs/dms3fs github.com/dms3-fs/go-dms3-fs/cmd/dms3fs"
+            run "cp cmd/dms3fs/dms3fs cmd/dms3fs/dist; cd cmd/dms3fs/dist; tar -czvf ../go-dms3-fs_${env.GOOS}-${env.GOARCH}-${env.SUBNAME}-${env.BUILD_NUMBER}.tar.gz ."
+            archiveArtifacts artifacts: "cmd/dms3fs/go-dms3fs_${env.GOOS}-${env.GOARCH}-${env.SUBNAME}-${env.BUILD_NUMBER}.tar.gz", fingerprint: true
           }
         }
       }

@@ -10,23 +10,23 @@ import (
 	"sync"
 	"time"
 
-	core "github.com/ipfs/go-ipfs/core"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	floodsub "gx/ipfs/QmVFB6rGJEZnzJrQwoEhbyDs1tA8RVsQvCS6JXpuw9Xtta/go-libp2p-floodsub"
-	blocks "gx/ipfs/QmWAzSEoqZ6xU6pu8yL8e5WaMb7wtbfbhhN4p1DknUPtr3/go-block-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	blocks "github.com/dms3-fs/go-block-format"
+	cid "github.com/dms3-fs/go-cid"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	floodsub "github.com/dms3-p2p/go-floodsub"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
 )
 
 var PubsubCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "An experimental publish-subscribe system on ipfs.",
+		Tagline: "An experimental publish-subscribe system on dms3fs.",
 		ShortDescription: `
-ipfs pubsub allows you to publish messages to a given topic, and also to
+dms3fs pubsub allows you to publish messages to a given topic, and also to
 subscribe to new messages on a given topic.
 
 This is an experimental feature. It is not intended in its current state
@@ -47,7 +47,7 @@ var PubsubSubCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Subscribe to messages on a given topic.",
 		ShortDescription: `
-ipfs pubsub sub subscribes to messages on a given topic.
+dms3fs pubsub sub subscribes to messages on a given topic.
 
 This is an experimental feature. It is not intended in its current state
 to be used in a production environment.
@@ -55,7 +55,7 @@ to be used in a production environment.
 To use, the daemon must be run with '--enable-pubsub-experiment'.
 `,
 		LongDescription: `
-ipfs pubsub sub subscribes to messages on a given topic.
+dms3fs pubsub sub subscribes to messages on a given topic.
 
 This is an experimental feature. It is not intended in its current state
 to be used in a production environment.
@@ -166,7 +166,7 @@ This command outputs data in the following encodings:
 	Type: floodsub.Message{},
 }
 
-func connectToPubSubPeers(ctx context.Context, n *core.IpfsNode, cid *cid.Cid) {
+func connectToPubSubPeers(ctx context.Context, n *core.Dms3FsNode, cid *cid.Cid) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -194,7 +194,7 @@ var PubsubPubCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Publish a message to a given pubsub topic.",
 		ShortDescription: `
-ipfs pubsub pub publishes a message to a specified topic.
+dms3fs pubsub pub publishes a message to a specified topic.
 
 This is an experimental feature. It is not intended in its current state
 to be used in a production environment.
@@ -245,7 +245,7 @@ var PubsubLsCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List subscribed topics by name.",
 		ShortDescription: `
-ipfs pubsub ls lists out the names of topics you are currently subscribed to.
+dms3fs pubsub ls lists out the names of topics you are currently subscribed to.
 
 This is an experimental feature. It is not intended in its current state
 to be used in a production environment.
@@ -297,7 +297,7 @@ var PubsubPeersCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List peers we are currently pubsubbing with.",
 		ShortDescription: `
-ipfs pubsub peers with no arguments lists out the pubsub peers you are
+dms3fs pubsub peers with no arguments lists out the pubsub peers you are
 currently connected to. If given a topic, it will list connected
 peers who are subscribed to the named topic.
 

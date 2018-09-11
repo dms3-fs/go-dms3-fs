@@ -1,4 +1,4 @@
-// Package gc provides garbage collection for go-ipfs.
+// Package gc provides garbage collection for go-dms3fs.
 package gc
 
 import (
@@ -7,17 +7,17 @@ import (
 	"fmt"
 	"strings"
 
-	pin "github.com/ipfs/go-ipfs/pin"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	bserv "gx/ipfs/QmbSB9Uh3wVgmiCb1fAb8zuC3qAE6un4kd1jvatUurfAmB/go-blockservice"
+	bserv "github.com/dms3-fs/go-blockservice"
+	pin "github.com/dms3-fs/go-dms3-fs/pin"
+	dag "github.com/dms3-fs/go-merkledag"
 
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	dstore "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	"gx/ipfs/QmVUhfewLZpSaAiBYCpw2krYMaiVmFuhr2iurQLuRoU6sD/go-verifcid"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	offline "gx/ipfs/QmZxjqR9Qgompju73kakSoUj3rbVndAzky3oCDiBNCxPs1/go-ipfs-exchange-offline"
-	bstore "gx/ipfs/QmcmpX42gtDv1fz24kau4wjS9hfwWj5VexWBKgGnWzsyag/go-ipfs-blockstore"
+	cid "github.com/dms3-fs/go-cid"
+	dstore "github.com/dms3-fs/go-datastore"
+	bstore "github.com/dms3-fs/go-fs-blockstore"
+	offline "github.com/dms3-fs/go-fs-exchange-offline"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	logging "github.com/dms3-fs/go-log"
+	"github.com/dms3-fs/go-verifcid"
 )
 
 var log = logging.Logger("gc")
@@ -131,7 +131,7 @@ func GC(ctx context.Context, bs bstore.GCBlockstore, dstor dstore.Datastore, pn 
 // adds them to the given cid.Set, using the provided dag.GetLinks function
 // to walk the tree.
 func Descendants(ctx context.Context, getLinks dag.GetLinks, set *cid.Set, roots []*cid.Cid) error {
-	verifyGetLinks := func(ctx context.Context, c *cid.Cid) ([]*ipld.Link, error) {
+	verifyGetLinks := func(ctx context.Context, c *cid.Cid) ([]*dms3ld.Link, error) {
 		err := verifcid.ValidateCid(c)
 		if err != nil {
 			return nil, err
@@ -143,9 +143,9 @@ func Descendants(ctx context.Context, getLinks dag.GetLinks, set *cid.Set, roots
 	verboseCidError := func(err error) error {
 		if strings.Contains(err.Error(), verifcid.ErrBelowMinimumHashLength.Error()) ||
 			strings.Contains(err.Error(), verifcid.ErrPossiblyInsecureHashFunction.Error()) {
-			err = fmt.Errorf("\"%s\"\nPlease run 'ipfs pin verify'"+
+			err = fmt.Errorf("\"%s\"\nPlease run 'dms3fs pin verify'"+
 				" to list insecure hashes. If you want to read them,"+
-				" please downgrade your go-ipfs to 0.4.13\n", err)
+				" please downgrade your go-dms3-fs to 0.4.13\n", err)
 			log.Error(err)
 		}
 		return err
@@ -168,13 +168,13 @@ func Descendants(ctx context.Context, getLinks dag.GetLinks, set *cid.Set, roots
 
 // ColoredSet computes the set of nodes in the graph that are pinned by the
 // pins in the given pinner.
-func ColoredSet(ctx context.Context, pn pin.Pinner, ng ipld.NodeGetter, bestEffortRoots []*cid.Cid, output chan<- Result) (*cid.Set, error) {
+func ColoredSet(ctx context.Context, pn pin.Pinner, ng dms3ld.NodeGetter, bestEffortRoots []*cid.Cid, output chan<- Result) (*cid.Set, error) {
 	// KeySet currently implemented in memory, in the future, may be bloom filter or
 	// disk backed to conserve memory.
 	errors := false
 	gcs := cid.NewSet()
-	getLinks := func(ctx context.Context, cid *cid.Cid) ([]*ipld.Link, error) {
-		links, err := ipld.GetLinks(ctx, ng, cid)
+	getLinks := func(ctx context.Context, cid *cid.Cid) ([]*dms3ld.Link, error) {
+		links, err := dms3ld.GetLinks(ctx, ng, cid)
 		if err != nil {
 			errors = true
 			output <- Result{Error: &CannotFetchLinksError{cid, err}}
@@ -187,9 +187,9 @@ func ColoredSet(ctx context.Context, pn pin.Pinner, ng ipld.NodeGetter, bestEffo
 		output <- Result{Error: err}
 	}
 
-	bestEffortGetLinks := func(ctx context.Context, cid *cid.Cid) ([]*ipld.Link, error) {
-		links, err := ipld.GetLinks(ctx, ng, cid)
-		if err != nil && err != ipld.ErrNotFound {
+	bestEffortGetLinks := func(ctx context.Context, cid *cid.Cid) ([]*dms3ld.Link, error) {
+		links, err := dms3ld.GetLinks(ctx, ng, cid)
+		if err != nil && err != dms3ld.ErrNotFound {
 			errors = true
 			output <- Result{Error: &CannotFetchLinksError{cid, err}}
 		}

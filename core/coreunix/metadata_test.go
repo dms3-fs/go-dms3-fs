@@ -6,24 +6,24 @@ import (
 	"io/ioutil"
 	"testing"
 
-	core "github.com/ipfs/go-ipfs/core"
-	ft "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	importer "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/importer"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	merkledag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	bserv "gx/ipfs/QmbSB9Uh3wVgmiCb1fAb8zuC3qAE6un4kd1jvatUurfAmB/go-blockservice"
+	bserv "github.com/dms3-fs/go-blockservice"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	merkledag "github.com/dms3-fs/go-merkledag"
+	ft "github.com/dms3-fs/go-unixfs"
+	importer "github.com/dms3-fs/go-unixfs/importer"
+	uio "github.com/dms3-fs/go-unixfs/io"
 
-	u "gx/ipfs/QmPdKqUcHGFdeSpvjVoaTRPPstGif9GBZb5Q56RVw9o69A/go-ipfs-util"
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	dssync "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/sync"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	chunker "gx/ipfs/QmXzBbJo2sLf3uwjNTeoWYiJV7CjAhkiA4twtLvwJSSNdK/go-ipfs-chunker"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	offline "gx/ipfs/QmZxjqR9Qgompju73kakSoUj3rbVndAzky3oCDiBNCxPs1/go-ipfs-exchange-offline"
-	bstore "gx/ipfs/QmcmpX42gtDv1fz24kau4wjS9hfwWj5VexWBKgGnWzsyag/go-ipfs-blockstore"
+	cid "github.com/dms3-fs/go-cid"
+	ds "github.com/dms3-fs/go-datastore"
+	dssync "github.com/dms3-fs/go-datastore/sync"
+	bstore "github.com/dms3-fs/go-fs-blockstore"
+	chunker "github.com/dms3-fs/go-fs-chunker"
+	offline "github.com/dms3-fs/go-fs-exchange-offline"
+	u "github.com/dms3-fs/go-fs-util"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
-func getDagserv(t *testing.T) ipld.DAGService {
+func getDagserv(t *testing.T) dms3ld.DAGService {
 	db := dssync.MutexWrap(ds.NewMapDatastore())
 	bs := bstore.NewBlockstore(db)
 	blockserv := bserv.New(bs, offline.Exchange(bs))
@@ -48,14 +48,14 @@ func TestMetadata(t *testing.T) {
 	m.MimeType = "THIS IS A TEST"
 
 	// Such effort, many compromise
-	ipfsnode := &core.IpfsNode{DAG: ds}
+	dms3fsnode := &core.Dms3FsNode{DAG: ds}
 
-	mdk, err := AddMetadataTo(ipfsnode, c.String(), m)
+	mdk, err := AddMetadataTo(dms3fsnode, c.String(), m)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	rec, err := Metadata(ipfsnode, mdk)
+	rec, err := Metadata(dms3fsnode, mdk)
 	if err != nil {
 		t.Fatal(err)
 	}

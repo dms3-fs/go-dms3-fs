@@ -3,12 +3,12 @@ package reprovide
 import (
 	"context"
 
-	pin "github.com/ipfs/go-ipfs/pin"
+	pin "github.com/dms3-fs/go-dms3-fs/pin"
 
-	merkledag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	blocks "gx/ipfs/QmcmpX42gtDv1fz24kau4wjS9hfwWj5VexWBKgGnWzsyag/go-ipfs-blockstore"
+	cid "github.com/dms3-fs/go-cid"
+	blocks "github.com/dms3-fs/go-fs-blockstore"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	merkledag "github.com/dms3-fs/go-merkledag"
 )
 
 // NewBlockstoreProvider returns key provider using bstore.AllKeysChan
@@ -19,7 +19,7 @@ func NewBlockstoreProvider(bstore blocks.Blockstore) KeyChanFunc {
 }
 
 // NewPinnedProvider returns provider supplying pinned keys
-func NewPinnedProvider(pinning pin.Pinner, dag ipld.DAGService, onlyRoots bool) KeyChanFunc {
+func NewPinnedProvider(pinning pin.Pinner, dag dms3ld.DAGService, onlyRoots bool) KeyChanFunc {
 	return func(ctx context.Context) (<-chan *cid.Cid, error) {
 		set, err := pinSet(ctx, pinning, dag, onlyRoots)
 		if err != nil {
@@ -43,7 +43,7 @@ func NewPinnedProvider(pinning pin.Pinner, dag ipld.DAGService, onlyRoots bool) 
 	}
 }
 
-func pinSet(ctx context.Context, pinning pin.Pinner, dag ipld.DAGService, onlyRoots bool) (*streamingSet, error) {
+func pinSet(ctx context.Context, pinning pin.Pinner, dag dms3ld.DAGService, onlyRoots bool) (*streamingSet, error) {
 	set := newStreamingSet()
 
 	go func() {

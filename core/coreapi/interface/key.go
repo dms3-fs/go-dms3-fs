@@ -3,9 +3,9 @@ package iface
 import (
 	"context"
 
-	options "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	options "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 
-	"gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
+	"github.com/dms3-p2p/go-p2p-peer"
 )
 
 // Key specifies the interface to Keys in KeyAPI Keystore
@@ -33,6 +33,6 @@ type KeyAPI interface {
 	// List lists keys stored in keystore
 	List(ctx context.Context) ([]Key, error)
 
-	// Remove removes keys from keystore. Returns ipns path of the removed key
+	// Remove removes keys from keystore. Returns dms3ns path of the removed key
 	Remove(ctx context.Context, name string) (Key, error)
 }

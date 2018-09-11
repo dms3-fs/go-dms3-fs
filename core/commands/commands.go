@@ -1,7 +1,7 @@
-// Package commands implements the ipfs command interface
+// Package commands implements the dms3fs command interface
 //
-// Using github.com/ipfs/go-ipfs/commands to define the command line and HTTP
-// APIs.  This is the interface available to folks using IPFS from outside of
+// Using github.com/dms3-fs/go-dms3-fs/commands to define the command line and HTTP
+// APIs.  This is the interface available to folks using DMS3FS from outside of
 // the Go language.
 package commands
 
@@ -11,10 +11,10 @@ import (
 	"sort"
 	"strings"
 
-	e "github.com/ipfs/go-ipfs/core/commands/e"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
 )
 
 type commandEncoder struct {
@@ -69,7 +69,7 @@ func CommandsCmd(root *cmds.Command) *cmds.Command {
 			cmdkit.BoolOption(flagsOptionName, "f", "Show command flags"),
 		},
 		Run: func(req *cmds.Request, res cmds.ResponseEmitter, env cmds.Environment) {
-			rootCmd := cmd2outputCmd("ipfs", root)
+			rootCmd := cmd2outputCmd("dms3fs", root)
 			rootCmd.showOpts, _ = req.Options[flagsOptionName].(bool)
 			err := cmds.EmitOnce(res, &rootCmd)
 			if err != nil {

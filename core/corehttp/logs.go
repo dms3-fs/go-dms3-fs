@@ -5,8 +5,8 @@ import (
 	"net"
 	"net/http"
 
-	core "github.com/ipfs/go-ipfs/core"
-	lwriter "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log/writer"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	lwriter "github.com/dms3-fs/go-log/writer"
 )
 
 type writeErrNotifier struct {
@@ -45,7 +45,7 @@ func (w *writeErrNotifier) Close() error {
 }
 
 func LogOption() ServeOption {
-	return func(n *core.IpfsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
+	return func(n *core.Dms3FsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
 		mux.HandleFunc("/logs", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(200)
 			wnf, errs := newWriteErrNotifier(w)

@@ -6,16 +6,16 @@ import (
 	"io"
 	"os"
 
-	oldCmds "github.com/ipfs/go-ipfs/commands"
-	lgc "github.com/ipfs/go-ipfs/commands/legacy"
-	"github.com/ipfs/go-ipfs/core"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	"github.com/ipfs/go-ipfs/filestore"
+	oldCmds "github.com/dms3-fs/go-dms3-fs/commands"
+	lgc "github.com/dms3-fs/go-dms3-fs/commands/legacy"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	"github.com/dms3-fs/go-dms3-fs/filestore"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
 )
 
 var FileStoreCmd = &cmds.Command{
@@ -231,7 +231,7 @@ var dupsFileStore = &oldCmds.Command{
 	Type:       RefWrapper{},
 }
 
-func getFilestore(env interface{}) (*core.IpfsNode, *filestore.Filestore, error) {
+func getFilestore(env interface{}) (*core.Dms3FsNode, *filestore.Filestore, error) {
 	n, err := cmdenv.GetNode(env)
 	if err != nil {
 		return nil, nil, err

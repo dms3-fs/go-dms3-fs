@@ -6,14 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ipfs/go-ipfs/core"
-	coreapi "github.com/ipfs/go-ipfs/core/coreapi"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	coreapi "github.com/dms3-fs/go-dms3-fs/core/coreapi"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
 
-	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit/files"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit/files"
+	"github.com/dms3-fs/go-fs-cmds"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 type Context struct {
@@ -25,8 +25,8 @@ type Context struct {
 	LoadConfig func(path string) (*config.Config, error)
 
 	api           coreiface.CoreAPI
-	node          *core.IpfsNode
-	ConstructNode func() (*core.IpfsNode, error)
+	node          *core.Dms3FsNode
+	ConstructNode func() (*core.Dms3FsNode, error)
 }
 
 // GetConfig returns the config of the current Command execution
@@ -44,7 +44,7 @@ func (c *Context) GetConfig() (*config.Config, error) {
 
 // GetNode returns the node of the current Command execution
 // context. It may construct it with the provided function.
-func (c *Context) GetNode() (*core.IpfsNode, error) {
+func (c *Context) GetNode() (*core.Dms3FsNode, error) {
 	var err error
 	if c.node == nil {
 		if c.ConstructNode == nil {
@@ -55,7 +55,7 @@ func (c *Context) GetNode() (*core.IpfsNode, error) {
 	return c.node, err
 }
 
-// GetApi returns CoreAPI instance backed by ipfs node.
+// GetApi returns CoreAPI instance backed by dms3fs node.
 // It may construct the node with the provided function
 func (c *Context) GetApi() (coreiface.CoreAPI, error) {
 	if c.api == nil {

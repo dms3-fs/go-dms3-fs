@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	"github.com/ipfs/go-ipfs/dagutils"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	"github.com/dms3-fs/go-dms3-fs/dagutils"
 
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
 )
 
 type Changes struct {
@@ -19,28 +19,28 @@ type Changes struct {
 
 var ObjectDiffCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Display the diff between two ipfs objects.",
+		Tagline: "Display the diff between two dms3fs objects.",
 		ShortDescription: `
-'ipfs object diff' is a command used to show the differences between
-two IPFS objects.`,
+'dms3fs object diff' is a command used to show the differences between
+two DMS3FS objects.`,
 		LongDescription: `
-'ipfs object diff' is a command used to show the differences between
-two IPFS objects.
+'dms3fs object diff' is a command used to show the differences between
+two DMS3FS objects.
 
 Example:
 
    > ls foo
    bar baz/ giraffe
-   > ipfs add -r foo
+   > dms3fs add -r foo
    ...
    Added QmegHcnrPgMwC7tBiMxChD54fgQMBUecNw9nE9UUU4x1bz foo
    > OBJ_A=QmegHcnrPgMwC7tBiMxChD54fgQMBUecNw9nE9UUU4x1bz
    > echo "different content" > foo/bar
-   > ipfs add -r foo
+   > dms3fs add -r foo
    ...
    Added QmcmRptkSPWhptCttgHg27QNDmnV33wAJyUkCnAvqD3eCD foo
    > OBJ_B=QmcmRptkSPWhptCttgHg27QNDmnV33wAJyUkCnAvqD3eCD
-   > ipfs object diff -v $OBJ_A $OBJ_B
+   > dms3fs object diff -v $OBJ_A $OBJ_B
    Changed "bar" from QmNgd5cz2jNftnAHBhcRUGdtiaMzb5Rhjqd4etondHHST8 to QmRfFVsjSXkhFxrfWnLpMae2M4GBVsry6VAuYYcji5MiZb.
 `,
 	},

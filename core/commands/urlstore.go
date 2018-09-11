@@ -5,17 +5,17 @@ import (
 	"io"
 	"net/http"
 
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	filestore "github.com/ipfs/go-ipfs/filestore"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	filestore "github.com/dms3-fs/go-dms3-fs/filestore"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	balanced "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/importer/balanced"
-	ihelper "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/importer/helpers"
-	trickle "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/importer/trickle"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	chunk "gx/ipfs/QmXzBbJo2sLf3uwjNTeoWYiJV7CjAhkiA4twtLvwJSSNdK/go-ipfs-chunker"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	chunk "github.com/dms3-fs/go-fs-chunker"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	balanced "github.com/dms3-fs/go-unixfs/importer/balanced"
+	ihelper "github.com/dms3-fs/go-unixfs/importer/helpers"
+	trickle "github.com/dms3-fs/go-unixfs/importer/trickle"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
 var urlStoreCmd = &cmds.Command{
@@ -28,15 +28,15 @@ var urlAdd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Add URL via urlstore.",
 		LongDescription: `
-Add URLs to ipfs without storing the data locally.
+Add URLs to dms3fs without storing the data locally.
 
 The URL provided must be stable and ideally on a web server under your
 control.
 
 The file is added using raw-leaves but otherwise using the default
-settings for 'ipfs add'.
+settings for 'dms3fs add'.
 
-The file is not pinned, so this command should be followed by an 'ipfs
+The file is not pinned, so this command should be followed by an 'dms3fs
 pin add'.
 
 This command is considered temporary until a better solution can be
@@ -48,7 +48,7 @@ time.
 		cmdkit.BoolOption(trickleOptionName, "t", "Use trickle-dag format for dag generation."),
 	},
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("url", true, false, "URL to add to IPFS"),
+		cmdkit.StringArg("url", true, false, "URL to add to DMS3FS"),
 	},
 	Type: BlockStat{},
 

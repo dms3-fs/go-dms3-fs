@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
 )
 
 func TestGetOutputPath(t *testing.T) {
@@ -16,32 +16,32 @@ func TestGetOutputPath(t *testing.T) {
 		outPath string
 	}{
 		{
-			args: []string{"/ipns/multiformats.io/"},
+			args: []string{"/dms3ns/dms3.io/"},
 			opts: map[string]interface{}{
 				"output": "takes-precedence",
 			},
 			outPath: "takes-precedence",
 		},
 		{
-			args: []string{"/ipns/multiformats.io/", "some-other-arg-to-be-ignored"},
+			args: []string{"/dms3ns/dms3.io/", "some-other-arg-to-be-ignored"},
 			opts: cmdkit.OptMap{
 				"output": "takes-precedence",
 			},
 			outPath: "takes-precedence",
 		},
 		{
-			args:    []string{"/ipns/multiformats.io/"},
-			outPath: "multiformats.io",
+			args:    []string{"/dms3ns/dms3.io/"},
+			outPath: "dms3.io",
 			opts:    cmdkit.OptMap{},
 		},
 		{
-			args:    []string{"/ipns/multiformats.io/logo.svg/"},
+			args:    []string{"/dms3ns/dms3.io/logo.svg/"},
 			outPath: "logo.svg",
 			opts:    cmdkit.OptMap{},
 		},
 		{
-			args:    []string{"/ipns/multiformats.io", "some-other-arg-to-be-ignored"},
-			outPath: "multiformats.io",
+			args:    []string{"/dms3ns/dms3.io", "some-other-arg-to-be-ignored"},
+			outPath: "dms3.io",
 			opts:    cmdkit.OptMap{},
 		},
 	}

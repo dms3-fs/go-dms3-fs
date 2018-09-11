@@ -7,21 +7,21 @@ import (
 	"io"
 	"time"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	core "github.com/ipfs/go-ipfs/core"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	corerepo "github.com/ipfs/go-ipfs/core/corerepo"
-	pin "github.com/ipfs/go-ipfs/pin"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	corerepo "github.com/dms3-fs/go-dms3-fs/core/corerepo"
+	pin "github.com/dms3-fs/go-dms3-fs/pin"
+	uio "github.com/dms3-fs/go-unixfs/io"
 
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	"gx/ipfs/QmVUhfewLZpSaAiBYCpw2krYMaiVmFuhr2iurQLuRoU6sD/go-verifcid"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	offline "gx/ipfs/QmZxjqR9Qgompju73kakSoUj3rbVndAzky3oCDiBNCxPs1/go-ipfs-exchange-offline"
-	bserv "gx/ipfs/QmbSB9Uh3wVgmiCb1fAb8zuC3qAE6un4kd1jvatUurfAmB/go-blockservice"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
-	resolver "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
+	bserv "github.com/dms3-fs/go-blockservice"
+	cid "github.com/dms3-fs/go-cid"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	offline "github.com/dms3-fs/go-fs-exchange-offline"
+	dag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
+	resolver "github.com/dms3-fs/go-path/resolver"
+	"github.com/dms3-fs/go-verifcid"
 )
 
 var PinCmd = &cmds.Command{
@@ -50,11 +50,11 @@ type AddPinOutput struct {
 var addPinCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline:          "Pin objects to local storage.",
-		ShortDescription: "Stores an IPFS object(s) from a given path locally to disk.",
+		ShortDescription: "Stores an DMS3FS object(s) from a given path locally to disk.",
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("ipfs-path", true, true, "Path to object(s) to be pinned.").EnableStdin(),
+		cmdkit.StringArg("dms3fs-path", true, true, "Path to object(s) to be pinned.").EnableStdin(),
 	},
 	Options: []cmdkit.Option{
 		cmdkit.BoolOption("recursive", "r", "Recursively pin the object linked to by the specified object(s).").WithDefault(true),
@@ -180,7 +180,7 @@ collected if needed. (By default, recursively. Use -r=false for direct pins.)
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("ipfs-path", true, true, "Path to object(s) to be unpinned.").EnableStdin(),
+		cmdkit.StringArg("dms3fs-path", true, true, "Path to object(s) to be unpinned.").EnableStdin(),
 	},
 	Options: []cmdkit.Option{
 		cmdkit.BoolOption("recursive", "r", "Recursively unpin the object linked to by the specified object(s).").WithDefault(true),
@@ -257,24 +257,24 @@ object. And if --type=<type> is additionally used, the command will also fail
 if any of the arguments is not of the specified type.
 
 Example:
-	$ echo "hello" | ipfs add -q
+	$ echo "hello" | dms3fs add -q
 	QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN
-	$ ipfs pin ls
+	$ dms3fs pin ls
 	QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN recursive
 	# now remove the pin, and repin it directly
-	$ ipfs pin rm QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN
+	$ dms3fs pin rm QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN
 	unpinned QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN
-	$ ipfs pin add -r=false QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN
+	$ dms3fs pin add -r=false QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN
 	pinned QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN directly
-	$ ipfs pin ls --type=direct
+	$ dms3fs pin ls --type=direct
 	QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN direct
-	$ ipfs pin ls QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN
+	$ dms3fs pin ls QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN
 	QmZULkCELmmk5XNfCgTnCyFgAVxBRBXyDHGGMVoLFLiXEN direct
 `,
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("ipfs-path", false, true, "Path to object(s) to be listed."),
+		cmdkit.StringArg("dms3fs-path", false, true, "Path to object(s) to be listed."),
 	},
 	Options: []cmdkit.Option{
 		cmdkit.StringOption("type", "t", "The type of pinned keys to list. Can be \"direct\", \"indirect\", \"recursive\", or \"all\".").WithDefault("all"),
@@ -501,7 +501,7 @@ type RefKeyList struct {
 	Keys map[string]RefKeyObject
 }
 
-func pinLsKeys(ctx context.Context, args []string, typeStr string, n *core.IpfsNode) (map[string]RefKeyObject, error) {
+func pinLsKeys(ctx context.Context, args []string, typeStr string, n *core.Dms3FsNode) (map[string]RefKeyObject, error) {
 
 	mode, ok := pin.StringToMode(typeStr)
 	if !ok {
@@ -548,7 +548,7 @@ func pinLsKeys(ctx context.Context, args []string, typeStr string, n *core.IpfsN
 	return keys, nil
 }
 
-func pinLsAll(ctx context.Context, typeStr string, n *core.IpfsNode) (map[string]RefKeyObject, error) {
+func pinLsAll(ctx context.Context, typeStr string, n *core.Dms3FsNode) (map[string]RefKeyObject, error) {
 
 	keys := make(map[string]RefKeyObject)
 
@@ -603,7 +603,7 @@ type pinVerifyOpts struct {
 	includeOk bool
 }
 
-func pinVerify(ctx context.Context, n *core.IpfsNode, opts pinVerifyOpts) <-chan interface{} {
+func pinVerify(ctx context.Context, n *core.Dms3FsNode, opts pinVerifyOpts) <-chan interface{} {
 	visited := make(map[string]PinStatus)
 
 	bs := n.Blocks.Blockstore()

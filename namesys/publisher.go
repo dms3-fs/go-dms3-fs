@@ -6,70 +6,70 @@ import (
 	"sync"
 	"time"
 
-	pin "github.com/ipfs/go-ipfs/pin"
-	ft "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	pin "github.com/dms3-fs/go-dms3-fs/pin"
+	path "github.com/dms3-fs/go-path"
+	ft "github.com/dms3-fs/go-unixfs"
 
-	ipns "gx/ipfs/QmNqBhXpBKa5jcjoUZHfxDgAFxtqK3rDA5jtW811GBvVob/go-ipns"
-	pb "gx/ipfs/QmNqBhXpBKa5jcjoUZHfxDgAFxtqK3rDA5jtW811GBvVob/go-ipns/pb"
-	ci "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	routing "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing"
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	dsquery "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/query"
-	proto "gx/ipfs/QmdxUuburamoF6zF9qjeQC4WYcWGbWuRmdLacMEsW8ioD8/gogo-protobuf/proto"
-	base32 "gx/ipfs/QmfVj3x4D6Jkq9SEoi5n2NmoUomLwoeiwnYz2KQa15wRw6/base32"
+	proto "github.com/gogo/protobuf/proto"
+	ds "github.com/dms3-fs/go-datastore"
+	dsquery "github.com/dms3-fs/go-datastore/query"
+	dms3ns "github.com/dms3-fs/go-dms3ns"
+	pb "github.com/dms3-fs/go-dms3ns/pb"
+	ci "github.com/dms3-p2p/go-p2p-crypto"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	routing "github.com/dms3-p2p/go-p2p-routing"
+	base32 "github.com/whyrusleeping/base32"
 )
 
-const ipnsPrefix = "/ipns/"
+const dms3nsPrefix = "/dms3ns/"
 
 const PublishPutValTimeout = time.Minute
 const DefaultRecordTTL = 24 * time.Hour
 
-// IpnsPublisher is capable of publishing and resolving names to the IPFS
+// Dms3NsPublisher is capable of publishing and resolving names to the DMS3FS
 // routing system.
-type IpnsPublisher struct {
+type Dms3NsPublisher struct {
 	routing routing.ValueStore
 	ds      ds.Datastore
 
-	// Used to ensure we assign IPNS records *sequential* sequence numbers.
+	// Used to ensure we assign DMS3NS records *sequential* sequence numbers.
 	mu sync.Mutex
 }
 
-// NewIpnsPublisher constructs a publisher for the IPFS Routing name system.
-func NewIpnsPublisher(route routing.ValueStore, ds ds.Datastore) *IpnsPublisher {
+// NewDms3NsPublisher constructs a publisher for the DMS3FS Routing name system.
+func NewDms3NsPublisher(route routing.ValueStore, ds ds.Datastore) *Dms3NsPublisher {
 	if ds == nil {
 		panic("nil datastore")
 	}
-	return &IpnsPublisher{routing: route, ds: ds}
+	return &Dms3NsPublisher{routing: route, ds: ds}
 }
 
 // Publish implements Publisher. Accepts a keypair and a value,
 // and publishes it out to the routing system
-func (p *IpnsPublisher) Publish(ctx context.Context, k ci.PrivKey, value path.Path) error {
+func (p *Dms3NsPublisher) Publish(ctx context.Context, k ci.PrivKey, value path.Path) error {
 	log.Debugf("Publish %s", value)
 	return p.PublishWithEOL(ctx, k, value, time.Now().Add(DefaultRecordTTL))
 }
 
-func IpnsDsKey(id peer.ID) ds.Key {
-	return ds.NewKey("/ipns/" + base32.RawStdEncoding.EncodeToString([]byte(id)))
+func Dms3NsDsKey(id peer.ID) ds.Key {
+	return ds.NewKey("/dms3ns/" + base32.RawStdEncoding.EncodeToString([]byte(id)))
 }
 
-// PublishedNames returns the latest IPNS records published by this node and
+// PublishedNames returns the latest DMS3NS records published by this node and
 // their expiration times.
 //
 // This method will not search the routing system for records published by other
 // nodes.
-func (p *IpnsPublisher) ListPublished(ctx context.Context) (map[peer.ID]*pb.IpnsEntry, error) {
+func (p *Dms3NsPublisher) ListPublished(ctx context.Context) (map[peer.ID]*pb.Dms3NsEntry, error) {
 	query, err := p.ds.Query(dsquery.Query{
-		Prefix: ipnsPrefix,
+		Prefix: dms3nsPrefix,
 	})
 	if err != nil {
 		return nil, err
 	}
 	defer query.Close()
 
-	records := make(map[peer.ID]*pb.IpnsEntry)
+	records := make(map[peer.ID]*pb.Dms3NsEntry)
 	for {
 		select {
 		case result, ok := <-query.Next():
@@ -79,20 +79,20 @@ func (p *IpnsPublisher) ListPublished(ctx context.Context) (map[peer.ID]*pb.Ipns
 			if result.Error != nil {
 				return nil, result.Error
 			}
-			e := new(pb.IpnsEntry)
+			e := new(pb.Dms3NsEntry)
 			if err := proto.Unmarshal(result.Value, e); err != nil {
 				// Might as well return what we can.
-				log.Error("found an invalid IPNS entry:", err)
+				log.Error("found an invalid DMS3NS entry:", err)
 				continue
 			}
-			if !strings.HasPrefix(result.Key, ipnsPrefix) {
-				log.Errorf("datastore query for keys with prefix %s returned a key: %s", ipnsPrefix, result.Key)
+			if !strings.HasPrefix(result.Key, dms3nsPrefix) {
+				log.Errorf("datastore query for keys with prefix %s returned a key: %s", dms3nsPrefix, result.Key)
 				continue
 			}
-			k := result.Key[len(ipnsPrefix):]
+			k := result.Key[len(dms3nsPrefix):]
 			pid, err := base32.RawStdEncoding.DecodeString(k)
 			if err != nil {
-				log.Errorf("ipns ds key invalid: %s", result.Key)
+				log.Errorf("dms3ns ds key invalid: %s", result.Key)
 				continue
 			}
 			records[peer.ID(pid)] = e
@@ -107,24 +107,24 @@ func (p *IpnsPublisher) ListPublished(ctx context.Context) (map[peer.ID]*pb.Ipns
 //
 // If `checkRouting` is true and we have no existing record, this method will
 // check the routing system for any existing records.
-func (p *IpnsPublisher) GetPublished(ctx context.Context, id peer.ID, checkRouting bool) (*pb.IpnsEntry, error) {
+func (p *Dms3NsPublisher) GetPublished(ctx context.Context, id peer.ID, checkRouting bool) (*pb.Dms3NsEntry, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 
-	value, err := p.ds.Get(IpnsDsKey(id))
+	value, err := p.ds.Get(Dms3NsDsKey(id))
 	switch err {
 	case nil:
 	case ds.ErrNotFound:
 		if !checkRouting {
 			return nil, nil
 		}
-		ipnskey := ipns.RecordKey(id)
-		value, err = p.routing.GetValue(ctx, ipnskey)
+		dms3nskey := dms3ns.RecordKey(id)
+		value, err = p.routing.GetValue(ctx, dms3nskey)
 		if err != nil {
 			// Not found or other network issue. Can't really do
 			// anything about this case.
 			if err != routing.ErrNotFound {
-				log.Debugf("error when determining the last published IPNS record for %s: %s", id, err)
+				log.Debugf("error when determining the last published DMS3NS record for %s: %s", id, err)
 			}
 
 			return nil, nil
@@ -132,14 +132,14 @@ func (p *IpnsPublisher) GetPublished(ctx context.Context, id peer.ID, checkRouti
 	default:
 		return nil, err
 	}
-	e := new(pb.IpnsEntry)
+	e := new(pb.Dms3NsEntry)
 	if err := proto.Unmarshal(value, e); err != nil {
 		return nil, err
 	}
 	return e, nil
 }
 
-func (p *IpnsPublisher) updateRecord(ctx context.Context, k ci.PrivKey, value path.Path, eol time.Time) (*pb.IpnsEntry, error) {
+func (p *Dms3NsPublisher) updateRecord(ctx context.Context, k ci.PrivKey, value path.Path, eol time.Time) (*pb.Dms3NsEntry, error) {
 	id, err := peer.IDFromPrivateKey(k)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (p *IpnsPublisher) updateRecord(ctx context.Context, k ci.PrivKey, value pa
 	}
 
 	// Create record
-	entry, err := ipns.Create(k, []byte(value), seqno, eol)
+	entry, err := dms3ns.Create(k, []byte(value), seqno, eol)
 	if err != nil {
 		return nil, err
 	}
@@ -180,15 +180,15 @@ func (p *IpnsPublisher) updateRecord(ctx context.Context, k ci.PrivKey, value pa
 	}
 
 	// Put the new record.
-	if err := p.ds.Put(IpnsDsKey(id), data); err != nil {
+	if err := p.ds.Put(Dms3NsDsKey(id), data); err != nil {
 		return nil, err
 	}
 	return entry, nil
 }
 
-// PublishWithEOL is a temporary stand in for the ipns records implementation
-// see here for more details: https://github.com/ipfs/specs/tree/master/records
-func (p *IpnsPublisher) PublishWithEOL(ctx context.Context, k ci.PrivKey, value path.Path, eol time.Time) error {
+// PublishWithEOL is a temporary stand in for the dms3ns records implementation
+// see here for more details: https://github.com/dms3-fs/specs/tree/master/records
+func (p *Dms3NsPublisher) PublishWithEOL(ctx context.Context, k ci.PrivKey, value path.Path, eol time.Time) error {
 	record, err := p.updateRecord(ctx, k, value, eol)
 	if err != nil {
 		return err
@@ -201,7 +201,7 @@ func (p *IpnsPublisher) PublishWithEOL(ctx context.Context, k ci.PrivKey, value 
 // as such, i'm using the context to wire it through to avoid changing too
 // much code along the way.
 func checkCtxTTL(ctx context.Context) (time.Duration, bool) {
-	v := ctx.Value("ipns-publish-ttl")
+	v := ctx.Value("dms3ns-publish-ttl")
 	if v == nil {
 		return 0, false
 	}
@@ -210,13 +210,13 @@ func checkCtxTTL(ctx context.Context) (time.Duration, bool) {
 	return d, ok
 }
 
-func PutRecordToRouting(ctx context.Context, r routing.ValueStore, k ci.PubKey, entry *pb.IpnsEntry) error {
+func PutRecordToRouting(ctx context.Context, r routing.ValueStore, k ci.PubKey, entry *pb.Dms3NsEntry) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	errs := make(chan error, 2) // At most two errors (IPNS, and public key)
+	errs := make(chan error, 2) // At most two errors (DMS3NS, and public key)
 
-	if err := ipns.EmbedPublicKey(k, entry); err != nil {
+	if err := dms3ns.EmbedPublicKey(k, entry); err != nil {
 		return err
 	}
 
@@ -226,7 +226,7 @@ func PutRecordToRouting(ctx context.Context, r routing.ValueStore, k ci.PubKey, 
 	}
 
 	go func() {
-		errs <- PublishEntry(ctx, r, ipns.RecordKey(id), entry)
+		errs <- PublishEntry(ctx, r, dms3ns.RecordKey(id), entry)
 	}()
 
 	// Publish the public key if a public key cannot be extracted from the ID
@@ -234,8 +234,8 @@ func PutRecordToRouting(ctx context.Context, r routing.ValueStore, k ci.PubKey, 
 	// and at that point we can even deprecate the /pk/ namespace in the dht
 	//
 	// NOTE: This check actually checks if the public key has been embedded
-	// in the IPNS entry. This check is sufficient because we embed the
-	// public key in the IPNS entry if it can't be extracted from the ID.
+	// in the DMS3NS entry. This check is sufficient because we embed the
+	// public key in the DMS3NS entry if it can't be extracted from the ID.
 	if entry.PubKey != nil {
 		go func() {
 			errs <- PublishPublicKey(ctx, r, PkKeyForID(id), k)
@@ -271,7 +271,7 @@ func PublishPublicKey(ctx context.Context, r routing.ValueStore, k string, pubk 
 	return r.PutValue(timectx, k, pkbytes)
 }
 
-func PublishEntry(ctx context.Context, r routing.ValueStore, ipnskey string, rec *pb.IpnsEntry) error {
+func PublishEntry(ctx context.Context, r routing.ValueStore, dms3nskey string, rec *pb.Dms3NsEntry) error {
 	timectx, cancel := context.WithTimeout(ctx, PublishPutValTimeout)
 	defer cancel()
 
@@ -280,12 +280,12 @@ func PublishEntry(ctx context.Context, r routing.ValueStore, ipnskey string, rec
 		return err
 	}
 
-	log.Debugf("Storing ipns entry at: %s", ipnskey)
-	// Store ipns entry at "/ipns/"+h(pubkey)
-	return r.PutValue(timectx, ipnskey, data)
+	log.Debugf("Storing dms3ns entry at: %s", dms3nskey)
+	// Store dms3ns entry at "/dms3ns/"+h(pubkey)
+	return r.PutValue(timectx, dms3nskey, data)
 }
 
-// InitializeKeyspace sets the ipns record for the given key to
+// InitializeKeyspace sets the dms3ns record for the given key to
 // point to an empty directory.
 // TODO: this doesnt feel like it belongs here
 func InitializeKeyspace(ctx context.Context, pub Publisher, pins pin.Pinner, key ci.PrivKey) error {

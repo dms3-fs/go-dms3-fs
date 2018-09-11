@@ -1,7 +1,7 @@
-Some helpful resources for finding your way around ipfs:
+Some helpful resources for finding your way around dms3fs:
 
-- quick-start: a quick show of various ipfs features.
-- ipfs commands: a list of all commands
-- ipfs --help: every command describes itself
-- https://github.com/ipfs/go-ipfs -- the src repository
-- #ipfs on irc.freenode.org -- the community irc channel
+- quick-start: a quick show of various dms3fs features.
+- dms3fs commands: a list of all commands
+- dms3fs --help: every command describes itself
+- https://github.com/dms3-fs/go-dms3-fs -- the src repository
+- #dms3fs on irc.freenode.org -- the community irc channel

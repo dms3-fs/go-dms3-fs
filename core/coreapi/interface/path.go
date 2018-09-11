@@ -1,21 +1,21 @@
 package iface
 
 import (
-	ipfspath "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	dms3fspath "github.com/dms3-fs/go-path"
 
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
 )
 
-//TODO: merge with ipfspath so we don't depend on it
+//TODO: merge with dms3fspath so we don't depend on it
 
 // Path is a generic wrapper for paths used in the API. A path can be resolved
 // to a CID using one of Resolve functions in the API.
 //
 // Paths must be prefixed with a valid prefix:
 //
-// * /ipfs - Immutable unixfs path (files)
-// * /ipld - Immutable ipld path (data)
-// * /ipns - Mutable names. Usually resolves to one of the immutable paths
+// * /dms3fs - Immutable unixfs path (files)
+// * /dms3ld - Immutable dms3ld path (data)
+// * /dms3ns - Mutable names. Usually resolves to one of the immutable paths
 //TODO: /local (MFS)
 type Path interface {
 	// String returns the path as a string.
@@ -23,7 +23,7 @@ type Path interface {
 
 	// Namespace returns the first component of the path.
 	//
-	// For example path "/ipfs/QmHash", calling Namespace() will return "ipfs"
+	// For example path "/dms3fs/QmHash", calling Namespace() will return "dms3fs"
 	Namespace() string
 
 	// Mutable returns false if the data pointed to by this path in guaranteed
@@ -46,22 +46,22 @@ type ResolvedPath interface {
 	// cidRoot := {"A": {"/": cidA }}
 	//
 	// And resolve paths:
-	// * "/ipfs/${cidRoot}"
+	// * "/dms3fs/${cidRoot}"
 	//   * Calling Cid() will return `cidRoot`
 	//   * Calling Root() will return `cidRoot`
 	//   * Calling Remainder() will return ``
 	//
-	// * "/ipfs/${cidRoot}/A"
+	// * "/dms3fs/${cidRoot}/A"
 	//   * Calling Cid() will return `cidA`
 	//   * Calling Root() will return `cidRoot`
 	//   * Calling Remainder() will return ``
 	//
-	// * "/ipfs/${cidRoot}/A/B/foo"
+	// * "/dms3fs/${cidRoot}/A/B/foo"
 	//   * Calling Cid() will return `cidB`
 	//   * Calling Root() will return `cidRoot`
 	//   * Calling Remainder() will return `foo`
 	//
-	// * "/ipfs/${cidRoot}/A/B/foo/bar"
+	// * "/dms3fs/${cidRoot}/A/B/foo/bar"
 	//   * Calling Cid() will return `cidB`
 	//   * Calling Root() will return `cidRoot`
 	//   * Calling Remainder() will return `foo/bar`
@@ -71,7 +71,7 @@ type ResolvedPath interface {
 	//
 	// Example:
 	// If you have 3 linked objects: QmRoot -> A -> B, and resolve path
-	// "/ipfs/QmRoot/A/B", the Root method will return the CID of object QmRoot
+	// "/dms3fs/QmRoot/A/B", the Root method will return the CID of object QmRoot
 	//
 	// For more examples see the documentation of Cid() method
 	Root() *cid.Cid
@@ -84,7 +84,7 @@ type ResolvedPath interface {
 	//
 	// {"foo": {"bar": 42 }}
 	//
-	// When resolving "/ipld/QmRoot/A/foo/bar", Remainder will return "foo/bar"
+	// When resolving "/dms3ld/QmRoot/A/foo/bar", Remainder will return "foo/bar"
 	//
 	// For more examples see the documentation of Cid() method
 	Remainder() string
@@ -94,7 +94,7 @@ type ResolvedPath interface {
 
 // path implements coreiface.Path
 type path struct {
-	path ipfspath.Path
+	path dms3fspath.Path
 }
 
 // resolvedPath implements coreiface.resolvedPath
@@ -105,20 +105,20 @@ type resolvedPath struct {
 	remainder string
 }
 
-// IpfsPath creates new /ipfs path from the provided CID
-func IpfsPath(c *cid.Cid) ResolvedPath {
+// Dms3FsPath creates new /dms3fs path from the provided CID
+func Dms3FsPath(c *cid.Cid) ResolvedPath {
 	return &resolvedPath{
-		path:      path{ipfspath.Path("/ipfs/" + c.String())},
+		path:      path{dms3fspath.Path("/dms3fs/" + c.String())},
 		cid:       c,
 		root:      c,
 		remainder: "",
 	}
 }
 
-// IpldPath creates new /ipld path from the provided CID
-func IpldPath(c *cid.Cid) ResolvedPath {
+// Dms3LdPath creates new /dms3ld path from the provided CID
+func Dms3LdPath(c *cid.Cid) ResolvedPath {
 	return &resolvedPath{
-		path:      path{ipfspath.Path("/ipld/" + c.String())},
+		path:      path{dms3fspath.Path("/dms3ld/" + c.String())},
 		cid:       c,
 		root:      c,
 		remainder: "",
@@ -127,7 +127,7 @@ func IpldPath(c *cid.Cid) ResolvedPath {
 
 // ParsePath parses string path to a Path
 func ParsePath(p string) (Path, error) {
-	pp, err := ipfspath.ParsePath(p)
+	pp, err := dms3fspath.ParsePath(p)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func ParsePath(p string) (Path, error) {
 // NewResolvedPath creates new ResolvedPath. This function performs no checks
 // and is intended to be used by resolver implementations. Incorrect inputs may
 // cause panics. Handle with care.
-func NewResolvedPath(ipath ipfspath.Path, c *cid.Cid, root *cid.Cid, remainder string) ResolvedPath {
+func NewResolvedPath(ipath dms3fspath.Path, c *cid.Cid, root *cid.Cid, remainder string) ResolvedPath {
 	return &resolvedPath{
 		path:      path{ipath},
 		cid:       c,
@@ -160,7 +160,7 @@ func (p *path) Namespace() string {
 
 func (p *path) Mutable() bool {
 	//TODO: MFS: check for /local
-	return p.Namespace() == "ipns"
+	return p.Namespace() == "dms3ns"
 }
 
 func (p *resolvedPath) Cid() *cid.Cid {

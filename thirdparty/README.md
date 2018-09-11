@@ -1,5 +1,5 @@
-thirdparty consists of Golang packages that contain no go-ipfs dependencies and
-may be vendored ipfs/go-ipfs at a later date.
+thirdparty consists of Golang packages that contain no go-dms3-fs dependencies and
+may be vendored dms3-fs/go-dms3-fs at a later date.
 
 packages in under this directory _must not_ import packages under
-`ipfs/go-ipfs` that are not also under `thirdparty`.
+`dms3-fs/go-dms3-fs` that are not also under `thirdparty`.

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	backoff "gx/ipfs/QmPJUtEJsm5YLUWhF6imvyCH8KZXRJa9Wup7FDMwTy5Ufz/backoff"
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	routing "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing"
-	"gx/ipfs/QmVUhfewLZpSaAiBYCpw2krYMaiVmFuhr2iurQLuRoU6sD/go-verifcid"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	backoff "github.com/cenkalti/backoff"
+	cid "github.com/dms3-fs/go-cid"
+	logging "github.com/dms3-fs/go-log"
+	"github.com/dms3-fs/go-verifcid"
+	routing "github.com/dms3-p2p/go-p2p-routing"
 )
 
 var log = logging.Logger("reprovider")
@@ -58,7 +58,7 @@ func (rp *Reprovider) Run(tick time.Duration) {
 		case <-after:
 		}
 
-		//'mute' the trigger channel so when `ipfs bitswap reprovide` is called
+		//'mute' the trigger channel so when `dms3fs bitswap reprovide` is called
 		//a 'reprovider is already running' error is returned
 		unmute := rp.muteTrigger()
 
@@ -77,7 +77,7 @@ func (rp *Reprovider) Run(tick time.Duration) {
 	}
 }
 
-// Reprovide registers all keys given by rp.keyProvider to libp2p content routing
+// Reprovide registers all keys given by rp.keyProvider to dms3-p2p content routing
 func (rp *Reprovider) Reprovide() error {
 	keychan, err := rp.keyProvider(rp.ctx)
 	if err != nil {

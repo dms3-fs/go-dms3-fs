@@ -1,11 +1,11 @@
 package loader
 
 import (
-	"github.com/ipfs/go-ipfs/core/coredag"
-	"github.com/ipfs/go-ipfs/plugin"
-	"gx/ipfs/QmWLWmRVSiagqP15jczsGME1qpob6HDbtbHAY2he9W5iUo/opentracing-go"
+	"github.com/dms3-fs/go-dms3-fs/core/coredag"
+	"github.com/dms3-fs/go-dms3-fs/plugin"
+	"github.com/opentracing/opentracing-go"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 func initialize(plugins []plugin.Plugin) error {
@@ -22,8 +22,8 @@ func initialize(plugins []plugin.Plugin) error {
 func run(plugins []plugin.Plugin) error {
 	for _, pl := range plugins {
 		switch pl := pl.(type) {
-		case plugin.PluginIPLD:
-			err := runIPLDPlugin(pl)
+		case plugin.PluginDMS3LD:
+			err := runDMS3LDPlugin(pl)
 			if err != nil {
 				return err
 			}
@@ -39,8 +39,8 @@ func run(plugins []plugin.Plugin) error {
 	return nil
 }
 
-func runIPLDPlugin(pl plugin.PluginIPLD) error {
-	err := pl.RegisterBlockDecoders(ipld.DefaultBlockDecoder)
+func runDMS3LDPlugin(pl plugin.PluginDMS3LD) error {
+	err := pl.RegisterBlockDecoders(dms3ld.DefaultBlockDecoder)
 	if err != nil {
 		return err
 	}

@@ -6,16 +6,16 @@ import (
 
 	context "context"
 
-	opts "github.com/ipfs/go-ipfs/namesys/opts"
-	proquint "gx/ipfs/QmYnf27kzqR2cxt6LFZdrAFJuQd6785fTkBvMuEj9EeRxM/proquint"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	proquint "github.com/bren2010/proquint"
+	opts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
+	path "github.com/dms3-fs/go-path"
 )
 
 type ProquintResolver struct{}
 
 // Resolve implements Resolver.
 func (r *ProquintResolver) Resolve(ctx context.Context, name string, options ...opts.ResolveOpt) (path.Path, error) {
-	return resolve(ctx, r, name, opts.ProcessOpts(options), "/ipns/")
+	return resolve(ctx, r, name, opts.ProcessOpts(options), "/dms3ns/")
 }
 
 // resolveOnce implements resolver. Decodes the proquint string.

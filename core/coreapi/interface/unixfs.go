@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
-// UnixfsAPI is the basic interface to immutable files in IPFS
+// UnixfsAPI is the basic interface to immutable files in DMS3FS
 type UnixfsAPI interface {
 	// Add imports the data from the reader into merkledag file
 	Add(context.Context, io.Reader) (ResolvedPath, error)
@@ -16,5 +16,5 @@ type UnixfsAPI interface {
 	Cat(context.Context, Path) (Reader, error)
 
 	// Ls returns the list of links in a directory
-	Ls(context.Context, Path) ([]*ipld.Link, error)
+	Ls(context.Context, Path) ([]*dms3ld.Link, error)
 }

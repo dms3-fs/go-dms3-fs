@@ -8,25 +8,25 @@ import (
 	"io"
 	"time"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	dag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
 
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	routing "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing"
-	notif "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing/notifications"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	b58 "gx/ipfs/QmWFAMPqsEyUX7gDUsRVmMWz59FxSpJ1b2v6bJ1yYzo7jY/go-base58-fast/base58"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	cid "github.com/dms3-fs/go-cid"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	routing "github.com/dms3-p2p/go-p2p-routing"
+	notif "github.com/dms3-p2p/go-p2p-routing/notifications"
+	b58 "github.com/mr-tron/base58/base58"
 )
 
 var ErrNotDHT = errors.New("routing service is not a DHT")
 
-// TODO: Factor into `ipfs dht` and `ipfs routing`.
-// Everything *except `query` goes into `ipfs routing`.
+// TODO: Factor into `dms3fs dht` and `dms3fs routing`.
+// Everything *except `query` goes into `dms3fs routing`.
 
 var DhtCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
@@ -368,7 +368,7 @@ var provideRefDhtCmd = &cmds.Command{
 	Type: notif.QueryEvent{},
 }
 
-func provideKeys(ctx context.Context, r routing.IpfsRouting, cids []*cid.Cid) error {
+func provideKeys(ctx context.Context, r routing.Dms3FsRouting, cids []*cid.Cid) error {
 	for _, c := range cids {
 		err := r.Provide(ctx, c, true)
 		if err != nil {
@@ -378,7 +378,7 @@ func provideKeys(ctx context.Context, r routing.IpfsRouting, cids []*cid.Cid) er
 	return nil
 }
 
-func provideKeysRec(ctx context.Context, r routing.IpfsRouting, dserv ipld.DAGService, cids []*cid.Cid) error {
+func provideKeysRec(ctx context.Context, r routing.Dms3FsRouting, dserv dms3ld.DAGService, cids []*cid.Cid) error {
 	provided := cid.NewSet()
 	for _, c := range cids {
 		kset := cid.NewSet()
@@ -509,7 +509,7 @@ Outputs the best value for the given key.
 
 There may be several different values for a given key stored in the routing
 system; in this context 'best' means the record that is most desirable. There is
-no one metric for 'best': it depends entirely on the key type. For IPNS, 'best'
+no one metric for 'best': it depends entirely on the key type. For DMS3NS, 'best'
 is the record that is both valid and has the highest sequence number (freshest).
 Different key types can specify other 'best' rules.
 `,
@@ -613,13 +613,13 @@ var putValueDhtCmd = &cmds.Command{
 Given a key of the form /foo/bar and a value of any form, this will write that
 value to the routing system with that key.
 
-Keys have two parts: a keytype (foo) and the key name (bar). IPNS uses the
-/ipns keytype, and expects the key name to be a Peer ID. IPNS entries are
+Keys have two parts: a keytype (foo) and the key name (bar). DMS3NS uses the
+/dms3ns keytype, and expects the key name to be a Peer ID. DMS3NS entries are
 specifically formatted (protocol buffer).
 
-You may only use keytypes that are supported in your ipfs binary: currently
-this is only /ipns. Unless you have a relatively deep understanding of the
-go-ipfs routing internals, you likely want to be using 'ipfs name publish' instead
+You may only use keytypes that are supported in your dms3fs binary: currently
+this is only /dms3ns. Unless you have a relatively deep understanding of the
+go-dms3-fs routing internals, you likely want to be using 'dms3fs name publish' instead
 of this.
 
 Value is arbitrary text. Standard input can be used to provide value.

@@ -13,38 +13,38 @@ import (
 	"strings"
 	"time"
 
-	core "github.com/ipfs/go-ipfs/core"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	"github.com/ipfs/go-ipfs/dagutils"
-	ft "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	"gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/importer"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
-	resolver "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	"github.com/dms3-fs/go-dms3-fs/dagutils"
+	dag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
+	resolver "github.com/dms3-fs/go-path/resolver"
+	ft "github.com/dms3-fs/go-unixfs"
+	"github.com/dms3-fs/go-unixfs/importer"
+	uio "github.com/dms3-fs/go-unixfs/io"
 
-	humanize "gx/ipfs/QmPSBJL4momYnE7DcUyk2DVhD6rH488ZmHBGLbxNdhU44K/go-humanize"
-	routing "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing"
-	multibase "gx/ipfs/QmSbvata2WqNkqGtZNg8MR3SKwnB8iQ7vTPJgWqB8bC5kR/go-multibase"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	chunker "gx/ipfs/QmXzBbJo2sLf3uwjNTeoWYiJV7CjAhkiA4twtLvwJSSNdK/go-ipfs-chunker"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	humanize "github.com/dustin/go-humanize"
+	cid "github.com/dms3-fs/go-cid"
+	chunker "github.com/dms3-fs/go-fs-chunker"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	routing "github.com/dms3-p2p/go-p2p-routing"
+	multibase "github.com/dms3-mft/go-multibase"
 )
 
 const (
-	ipfsPathPrefix = "/ipfs/"
-	ipnsPathPrefix = "/ipns/"
+	dms3fsPathPrefix = "/dms3fs/"
+	dms3nsPathPrefix = "/dms3ns/"
 )
 
-// gatewayHandler is a HTTP handler that serves IPFS objects (accessible by default at /ipfs/<path>)
-// (it serves requests like GET /ipfs/QmVRzPKPzNtSrEzBFm2UZfxmPAgnaLke4DMcerbsGGSaFe/link)
+// gatewayHandler is a HTTP handler that serves DMS3FS objects (accessible by default at /dms3fs/<path>)
+// (it serves requests like GET /dms3fs/QmVRzPKPzNtSrEzBFm2UZfxmPAgnaLke4DMcerbsGGSaFe/link)
 type gatewayHandler struct {
-	node   *core.IpfsNode
+	node   *core.Dms3FsNode
 	config GatewayConfig
 	api    coreiface.CoreAPI
 }
 
-func newGatewayHandler(n *core.IpfsNode, c GatewayConfig, api coreiface.CoreAPI) *gatewayHandler {
+func newGatewayHandler(n *core.Dms3FsNode, c GatewayConfig, api coreiface.CoreAPI) *gatewayHandler {
 	i := &gatewayHandler{
 		node:   n,
 		config: c,
@@ -54,7 +54,7 @@ func newGatewayHandler(n *core.IpfsNode, c GatewayConfig, api coreiface.CoreAPI)
 }
 
 // TODO(cryptix):  find these helpers somewhere else
-func (i *gatewayHandler) newDagFromReader(r io.Reader) (ipld.Node, error) {
+func (i *gatewayHandler) newDagFromReader(r io.Reader) (dms3ld.Node, error) {
 	// TODO(cryptix): change and remove this helper once PR1136 is merged
 	// return ufs.AddFromReader(i.node, r.Body)
 	return importer.BuildDagFromReader(
@@ -139,7 +139,7 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 	// the prefix header can be set to signal this sub-path.
 	// It will be prepended to links in directory listings and the index.html redirect.
 	prefix := ""
-	if prfx := r.Header.Get("X-Ipfs-Gateway-Prefix"); len(prfx) > 0 {
+	if prfx := r.Header.Get("X-Dms3Fs-Gateway-Prefix"); len(prfx) > 0 {
 		for _, p := range i.config.PathPrefixes {
 			if prfx == p || strings.HasPrefix(prfx, p+"/") {
 				prefix = prfx
@@ -148,31 +148,31 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 		}
 	}
 
-	// IPNSHostnameOption might have constructed an IPNS path using the Host header.
+	// DMS3NSHostnameOption might have constructed an DMS3NS path using the Host header.
 	// In this case, we need the original path for constructing redirects
 	// and links that match the requested URL.
-	// For example, http://example.net would become /ipns/example.net, and
-	// the redirects and links would end up as http://example.net/ipns/example.net
+	// For example, http://example.net would become /dms3ns/example.net, and
+	// the redirects and links would end up as http://example.net/dms3ns/example.net
 	originalUrlPath := prefix + urlPath
-	ipnsHostname := false
-	if hdr := r.Header.Get("X-Ipns-Original-Path"); len(hdr) > 0 {
+	dms3nsHostname := false
+	if hdr := r.Header.Get("X-Dms3Ns-Original-Path"); len(hdr) > 0 {
 		originalUrlPath = prefix + hdr
-		ipnsHostname = true
+		dms3nsHostname = true
 	}
 
 	parsedPath, err := coreiface.ParsePath(urlPath)
 	if err != nil {
-		webError(w, "invalid ipfs path", err, http.StatusBadRequest)
+		webError(w, "invalid dms3fs path", err, http.StatusBadRequest)
 		return
 	}
 
 	// Resolve path to the final DAG node for the ETag
 	resolvedPath, err := i.api.ResolvePath(ctx, parsedPath)
 	if err == coreiface.ErrOffline && !i.node.OnlineMode() {
-		webError(w, "ipfs resolve -r "+escapedURLPath, err, http.StatusServiceUnavailable)
+		webError(w, "dms3fs resolve -r "+escapedURLPath, err, http.StatusServiceUnavailable)
 		return
 	} else if err != nil {
-		webError(w, "ipfs resolve -r "+escapedURLPath, err, http.StatusNotFound)
+		webError(w, "dms3fs resolve -r "+escapedURLPath, err, http.StatusNotFound)
 		return
 	}
 
@@ -185,7 +185,7 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 	case coreiface.ErrIsDir:
 		dir = true
 	default:
-		webError(w, "ipfs cat "+escapedURLPath, err, http.StatusNotFound)
+		webError(w, "dms3fs cat "+escapedURLPath, err, http.StatusNotFound)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 	}
 
 	i.addUserHeaders(w) // ok, _now_ write user's headers.
-	w.Header().Set("X-IPFS-Path", urlPath)
+	w.Header().Set("X-DMS3FS-Path", urlPath)
 	w.Header().Set("Etag", etag)
 
 	// set 'allowed' headers
@@ -216,15 +216,15 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 	// Suborigin header, sandboxes apps from each other in the browser (even
 	// though they are served from the same gateway domain).
 	//
-	// Omitted if the path was treated by IPNSHostnameOption(), for example
-	// a request for http://example.net/ would be changed to /ipns/example.net/,
+	// Omitted if the path was treated by DMS3NSHostnameOption(), for example
+	// a request for http://example.net/ would be changed to /dms3ns/example.net/,
 	// which would turn into an incorrect Suborigin header.
 	// In this case the correct thing to do is omit the header because it is already
 	// handled correctly without a Suborigin.
 	//
 	// NOTE: This is not yet widely supported by browsers.
-	if !ipnsHostname {
-		// e.g.: 1="ipfs", 2="QmYuNaKwY...", ...
+	if !dms3nsHostname {
+		// e.g.: 1="dms3fs", 2="QmYuNaKwY...", ...
 		pathComponents := strings.SplitN(urlPath, "/", 4)
 
 		var suboriginRaw []byte
@@ -248,11 +248,11 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 
 	// set these headers _after_ the error, for we may just not have it
 	// and dont want the client to cache a 500 response...
-	// and only if it's /ipfs!
-	// TODO: break this out when we split /ipfs /ipns routes.
+	// and only if it's /dms3fs!
+	// TODO: break this out when we split /dms3fs /dms3ns routes.
 	modtime := time.Now()
 
-	if strings.HasPrefix(urlPath, ipfsPathPrefix) && !dir {
+	if strings.HasPrefix(urlPath, dms3fsPathPrefix) && !dir {
 		w.Header().Set("Cache-Control", "public, max-age=29030400, immutable")
 
 		// set modtime to a really long time ago, since files are immutable and should stay cached
@@ -295,7 +295,7 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 			return
 		}
 
-		dr, err := i.api.Unixfs().Cat(ctx, coreiface.IpfsPath(ixnd.Cid()))
+		dr, err := i.api.Unixfs().Cat(ctx, coreiface.Dms3FsPath(ixnd.Cid()))
 		if err != nil {
 			internalWebError(w, err)
 			return
@@ -317,7 +317,7 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 
 	// storage for directory listing
 	var dirListing []directoryItem
-	dirr.ForEachLink(ctx, func(link *ipld.Link) error {
+	dirr.ForEachLink(ctx, func(link *dms3ld.Link) error {
 		// See comment above where originalUrlPath is declared.
 		di := directoryItem{humanize.Bytes(link.Size), link.Name, gopath.Join(originalUrlPath, link.Name)}
 		dirListing = append(dirListing, di)
@@ -325,17 +325,17 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 	})
 
 	// construct the correct back link
-	// https://github.com/ipfs/go-ipfs/issues/1365
+	// https://github.com/dms3-fs/go-dms3-fs/issues/1365
 	var backLink string = prefix + urlPath
 
-	// don't go further up than /ipfs/$hash/
+	// don't go further up than /dms3fs/$hash/
 	pathSplit := path.SplitList(backLink)
 	switch {
 	// keep backlink
-	case len(pathSplit) == 3: // url: /ipfs/$hash
+	case len(pathSplit) == 3: // url: /dms3fs/$hash
 
 	// keep backlink
-	case len(pathSplit) == 4 && pathSplit[3] == "": // url: /ipfs/$hash/
+	case len(pathSplit) == 4 && pathSplit[3] == "": // url: /dms3fs/$hash/
 
 	// add the correct link depending on wether the path ends with a slash
 	default:
@@ -346,8 +346,8 @@ func (i *gatewayHandler) getOrHeadHandler(ctx context.Context, w http.ResponseWr
 		}
 	}
 
-	// strip /ipfs/$hash from backlink if IPNSHostnameOption touched the path.
-	if ipnsHostname {
+	// strip /dms3fs/$hash from backlink if DMS3NSHostnameOption touched the path.
+	if dms3nsHostname {
 		backLink = prefix + "/"
 		if len(pathSplit) > 5 {
 			// also strip the trailing segment, because it's a backlink
@@ -405,7 +405,7 @@ func (i *gatewayHandler) postHandler(ctx context.Context, w http.ResponseWriter,
 	}
 
 	i.addUserHeaders(w) // ok, _now_ write user's headers.
-	w.Header().Set("IPFS-Hash", p.Cid().String())
+	w.Header().Set("DMS3FS-Hash", p.Cid().String())
 	http.Redirect(w, r, p.String(), http.StatusCreated)
 }
 
@@ -416,17 +416,17 @@ func (i *gatewayHandler) putHandler(w http.ResponseWriter, r *http.Request) {
 
 	rootPath, err := path.ParsePath(r.URL.Path)
 	if err != nil {
-		webError(w, "putHandler: IPFS path not valid", err, http.StatusBadRequest)
+		webError(w, "putHandler: DMS3FS path not valid", err, http.StatusBadRequest)
 		return
 	}
 
 	rsegs := rootPath.Segments()
-	if rsegs[0] == ipnsPathPrefix {
-		webError(w, "putHandler: updating named entries not supported", errors.New("WritableGateway: ipns put not supported"), http.StatusBadRequest)
+	if rsegs[0] == dms3nsPathPrefix {
+		webError(w, "putHandler: updating named entries not supported", errors.New("WritableGateway: dms3ns put not supported"), http.StatusBadRequest)
 		return
 	}
 
-	var newnode ipld.Node
+	var newnode dms3ld.Node
 	if rsegs[len(rsegs)-1] == "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" {
 		newnode = ft.EmptyDirNode()
 	} else {
@@ -512,8 +512,8 @@ func (i *gatewayHandler) putHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	i.addUserHeaders(w) // ok, _now_ write user's headers.
-	w.Header().Set("IPFS-Hash", newcid.String())
-	http.Redirect(w, r, gopath.Join(ipfsPathPrefix, newcid.String(), newPath), http.StatusCreated)
+	w.Header().Set("DMS3FS-Hash", newcid.String())
+	http.Redirect(w, r, gopath.Join(dms3fsPathPrefix, newcid.String(), newPath), http.StatusCreated)
 }
 
 func (i *gatewayHandler) deleteHandler(w http.ResponseWriter, r *http.Request) {
@@ -589,8 +589,8 @@ func (i *gatewayHandler) deleteHandler(w http.ResponseWriter, r *http.Request) {
 	ncid := newnode.Cid()
 
 	i.addUserHeaders(w) // ok, _now_ write user's headers.
-	w.Header().Set("IPFS-Hash", ncid.String())
-	http.Redirect(w, r, gopath.Join(ipfsPathPrefix+ncid.String(), path.Join(components[:len(components)-1])), http.StatusCreated)
+	w.Header().Set("DMS3FS-Hash", ncid.String())
+	http.Redirect(w, r, gopath.Join(dms3fsPathPrefix+ncid.String(), path.Join(components[:len(components)-1])), http.StatusCreated)
 }
 
 func (i *gatewayHandler) addUserHeaders(w http.ResponseWriter) {

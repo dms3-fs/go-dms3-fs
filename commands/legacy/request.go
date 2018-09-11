@@ -7,11 +7,11 @@ import (
 	"os"
 	"reflect"
 
-	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit/files"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit/files"
+	"github.com/dms3-fs/go-fs-cmds"
 
-	oldcmds "github.com/ipfs/go-ipfs/commands"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
 )
 
 // requestWrapper implements a oldcmds.Request from an Request
@@ -147,7 +147,7 @@ func (r *requestWrapper) Values() map[string]interface{} {
 	return nil
 }
 
-// copied from go-ipfs-cmds/request.go
+// copied from go-fs-cmds/request.go
 func convertOptions(req *cmds.Request) error {
 	optDefSlice := req.Command.Options
 

@@ -9,12 +9,12 @@ import (
 	"hash/fnv"
 	"sort"
 
-	"github.com/ipfs/go-ipfs/pin/internal/pb"
-	"gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
+	"github.com/dms3-fs/go-dms3-fs/pin/internal/pb"
+	"github.com/dms3-fs/go-merkledag"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	"gx/ipfs/QmdxUuburamoF6zF9qjeQC4WYcWGbWuRmdLacMEsW8ioD8/gogo-protobuf/proto"
+	"github.com/gogo/protobuf/proto"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 const (
@@ -39,7 +39,7 @@ type itemIterator func() (c *cid.Cid, ok bool)
 type keyObserver func(*cid.Cid)
 
 type sortByHash struct {
-	links []*ipld.Link
+	links []*dms3ld.Link
 }
 
 func (s sortByHash) Len() int {
@@ -54,10 +54,10 @@ func (s sortByHash) Swap(a, b int) {
 	s.links[a], s.links[b] = s.links[b], s.links[a]
 }
 
-func storeItems(ctx context.Context, dag ipld.DAGService, estimatedLen uint64, depth uint32, iter itemIterator, internalKeys keyObserver) (*merkledag.ProtoNode, error) {
-	links := make([]*ipld.Link, 0, defaultFanout+maxItems)
+func storeItems(ctx context.Context, dag dms3ld.DAGService, estimatedLen uint64, depth uint32, iter itemIterator, internalKeys keyObserver) (*merkledag.ProtoNode, error) {
+	links := make([]*dms3ld.Link, 0, defaultFanout+maxItems)
 	for i := 0; i < defaultFanout; i++ {
-		links = append(links, &ipld.Link{Cid: emptyKey})
+		links = append(links, &dms3ld.Link{Cid: emptyKey})
 	}
 
 	// add emptyKey to our set of internal pinset objects
@@ -85,7 +85,7 @@ func storeItems(ctx context.Context, dag ipld.DAGService, estimatedLen uint64, d
 				break
 			}
 
-			links = append(links, &ipld.Link{Cid: k})
+			links = append(links, &dms3ld.Link{Cid: k})
 		}
 
 		n.SetLinks(links)
@@ -148,7 +148,7 @@ func storeItems(ctx context.Context, dag ipld.DAGService, estimatedLen uint64, d
 		internalKeys(childKey)
 
 		// overwrite the 'empty key' in the existing links array
-		n.Links()[h] = &ipld.Link{
+		n.Links()[h] = &dms3ld.Link{
 			Cid:  childKey,
 			Size: size,
 		}
@@ -201,9 +201,9 @@ func writeHdr(n *merkledag.ProtoNode, hdr *pb.Set) error {
 	return nil
 }
 
-type walkerFunc func(idx int, link *ipld.Link) error
+type walkerFunc func(idx int, link *dms3ld.Link) error
 
-func walkItems(ctx context.Context, dag ipld.DAGService, n *merkledag.ProtoNode, fn walkerFunc, children keyObserver) error {
+func walkItems(ctx context.Context, dag dms3ld.DAGService, n *merkledag.ProtoNode, fn walkerFunc, children keyObserver) error {
 	hdr, err := readHdr(n)
 	if err != nil {
 		return err
@@ -238,7 +238,7 @@ func walkItems(ctx context.Context, dag ipld.DAGService, n *merkledag.ProtoNode,
 	return nil
 }
 
-func loadSet(ctx context.Context, dag ipld.DAGService, root *merkledag.ProtoNode, name string, internalKeys keyObserver) ([]*cid.Cid, error) {
+func loadSet(ctx context.Context, dag dms3ld.DAGService, root *merkledag.ProtoNode, name string, internalKeys keyObserver) ([]*cid.Cid, error) {
 	l, err := root.GetNodeLink(name)
 	if err != nil {
 		return nil, err
@@ -258,7 +258,7 @@ func loadSet(ctx context.Context, dag ipld.DAGService, root *merkledag.ProtoNode
 	}
 
 	var res []*cid.Cid
-	walk := func(idx int, link *ipld.Link) error {
+	walk := func(idx int, link *dms3ld.Link) error {
 		res = append(res, link.Cid)
 		return nil
 	}
@@ -281,7 +281,7 @@ func getCidListIterator(cids []*cid.Cid) itemIterator {
 	}
 }
 
-func storeSet(ctx context.Context, dag ipld.DAGService, cids []*cid.Cid, internalKeys keyObserver) (*merkledag.ProtoNode, error) {
+func storeSet(ctx context.Context, dag dms3ld.DAGService, cids []*cid.Cid, internalKeys keyObserver) (*merkledag.ProtoNode, error) {
 	iter := getCidListIterator(cids)
 
 	n, err := storeItems(ctx, dag, uint64(len(cids)), 0, iter, internalKeys)

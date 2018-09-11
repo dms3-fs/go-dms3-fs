@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
-	options "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	options "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 // ObjectStat provides information about dag nodes
@@ -69,19 +69,19 @@ type ObjectChange struct {
 // for manipulating MerkleDAG data structures.
 type ObjectAPI interface {
 	// New creates new, empty (by default) dag-node.
-	New(context.Context, ...options.ObjectNewOption) (ipld.Node, error)
+	New(context.Context, ...options.ObjectNewOption) (dms3ld.Node, error)
 
 	// Put imports the data into merkledag
 	Put(context.Context, io.Reader, ...options.ObjectPutOption) (ResolvedPath, error)
 
 	// Get returns the node for the path
-	Get(context.Context, Path) (ipld.Node, error)
+	Get(context.Context, Path) (dms3ld.Node, error)
 
 	// Data returns reader for data of the node
 	Data(context.Context, Path) (io.Reader, error)
 
 	// Links returns lint or links the node contains
-	Links(context.Context, Path) ([]*ipld.Link, error)
+	Links(context.Context, Path) ([]*dms3ld.Link, error)
 
 	// Stat returns information about the node
 	Stat(context.Context, Path) (*ObjectStat, error)

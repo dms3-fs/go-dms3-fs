@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"testing"
 
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	mdtest "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag/test"
+	dag "github.com/dms3-fs/go-merkledag"
+	mdtest "github.com/dms3-fs/go-merkledag/test"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
-func buildNode(name string, desc map[string]ndesc, out map[string]ipld.Node) ipld.Node {
+func buildNode(name string, desc map[string]ndesc, out map[string]dms3ld.Node) dms3ld.Node {
 	this := desc[name]
 	nd := new(dag.ProtoNode)
 	nd.SetData([]byte(name))
@@ -33,8 +33,8 @@ func buildNode(name string, desc map[string]ndesc, out map[string]ipld.Node) ipl
 
 type ndesc map[string]string
 
-func mkGraph(desc map[string]ndesc) map[string]ipld.Node {
-	out := make(map[string]ipld.Node)
+func mkGraph(desc map[string]ndesc) map[string]dms3ld.Node {
+	out := make(map[string]dms3ld.Node)
 	for name := range desc {
 		if _, ok := out[name]; ok {
 			continue
@@ -154,11 +154,11 @@ func TestDiffEnumBasic(t *testing.T) {
 }
 
 type getLogger struct {
-	ds  ipld.NodeGetter
+	ds  dms3ld.NodeGetter
 	log []*cid.Cid
 }
 
-func (gl *getLogger) Get(ctx context.Context, c *cid.Cid) (ipld.Node, error) {
+func (gl *getLogger) Get(ctx context.Context, c *cid.Cid) (dms3ld.Node, error) {
 	nd, err := gl.ds.Get(ctx, c)
 	if err != nil {
 		return nil, err
@@ -167,8 +167,8 @@ func (gl *getLogger) Get(ctx context.Context, c *cid.Cid) (ipld.Node, error) {
 	return nd, nil
 }
 
-func (gl *getLogger) GetMany(ctx context.Context, cids []*cid.Cid) <-chan *ipld.NodeOption {
-	outCh := make(chan *ipld.NodeOption, len(cids))
+func (gl *getLogger) GetMany(ctx context.Context, cids []*cid.Cid) <-chan *dms3ld.NodeOption {
+	outCh := make(chan *dms3ld.NodeOption, len(cids))
 	nds := gl.ds.GetMany(ctx, cids)
 	for no := range nds {
 		if no.Err == nil {
@@ -211,7 +211,7 @@ func TestDiffEnumFail(t *testing.T) {
 	}
 
 	err := DiffEnumerate(ctx, lgds, nds["a1"].Cid(), nds["a2"].Cid())
-	if err != ipld.ErrNotFound {
+	if err != dms3ld.ErrNotFound {
 		t.Fatal("expected err not found")
 	}
 

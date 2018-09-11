@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ipfs/go-ipfs/assets"
+	"github.com/dms3-fs/go-dms3-fs/assets"
 )
 
 // structs for directory listing
@@ -40,9 +40,9 @@ func init() {
 		_, ok := knownIcons[ext]
 		if !ok {
 			// default blank icon
-			return "ipfs-_blank"
+			return "dms3fs-_blank"
 		}
-		return "ipfs-" + ext[1:] // slice of the first dot
+		return "dms3fs-" + ext[1:] // slice of the first dot
 	}
 
 	// custom template-escaping function to escape a full path, including '#' and '?'

@@ -11,17 +11,17 @@ import (
 	"testing"
 	"time"
 
-	random "github.com/ipfs/go-ipfs/Godeps/_workspace/src/github.com/jbenet/go-random"
+	random "github.com/dms3-fs/go-dms3-fs/Godeps/_workspace/src/github.com/jbenet/go-random"
 
-	"github.com/ipfs/go-ipfs/core"
-	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
-	mock "github.com/ipfs/go-ipfs/core/mock"
-	"github.com/ipfs/go-ipfs/thirdparty/unit"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	coreunix "github.com/dms3-fs/go-dms3-fs/core/coreunix"
+	mock "github.com/dms3-fs/go-dms3-fs/core/mock"
+	"github.com/dms3-fs/go-dms3-fs/thirdparty/unit"
 
-	mocknet "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/net/mock"
-	testutil "gx/ipfs/QmRNhSdqzMcuRxX9A1egBeQ3BhDTguDV5HPwi8wRykkPU8/go-testutil"
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	logging "github.com/dms3-fs/go-log"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	mocknet "github.com/dms3-p2p/go-p2p/p2p/net/mock"
+	testutil "github.com/dms3-p2p/go-testutil"
 )
 
 var log = logging.Logger("epictest")
@@ -156,7 +156,7 @@ func DirectAddCat(data []byte, conf testutil.LatencyConfig) error {
 }
 
 func SkipUnlessEpic(t *testing.T) {
-	if os.Getenv("IPFS_EPIC_TEST") == "" {
+	if os.Getenv("DMS3FS_EPIC_TEST") == "" {
 		t.SkipNow()
 	}
 }

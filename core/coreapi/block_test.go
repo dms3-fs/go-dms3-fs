@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	opt "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
 func TestBlockPut(t *testing.T) {

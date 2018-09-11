@@ -3,11 +3,11 @@ package repo
 import (
 	"errors"
 
-	filestore "github.com/ipfs/go-ipfs/filestore"
-	keystore "github.com/ipfs/go-ipfs/keystore"
+	filestore "github.com/dms3-fs/go-dms3-fs/filestore"
+	keystore "github.com/dms3-fs/go-dms3-fs/keystore"
 
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	config "github.com/dms3-fs/go-fs-config"
+	ma "github.com/dms3-mft/go-multiaddr"
 )
 
 var errTODO = errors.New("TODO: mock repo")

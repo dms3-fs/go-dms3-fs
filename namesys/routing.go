@@ -5,46 +5,46 @@ import (
 	"strings"
 	"time"
 
-	opts "github.com/ipfs/go-ipfs/namesys/opts"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	opts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
+	path "github.com/dms3-fs/go-path"
 
-	ipns "gx/ipfs/QmNqBhXpBKa5jcjoUZHfxDgAFxtqK3rDA5jtW811GBvVob/go-ipns"
-	pb "gx/ipfs/QmNqBhXpBKa5jcjoUZHfxDgAFxtqK3rDA5jtW811GBvVob/go-ipns/pb"
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	routing "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing"
-	dht "gx/ipfs/QmTRj8mj6X5LtjVochPPSNX6MTbJ6iVojcfakWJKG13re7/go-libp2p-kad-dht"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	proto "gx/ipfs/QmdxUuburamoF6zF9qjeQC4WYcWGbWuRmdLacMEsW8ioD8/gogo-protobuf/proto"
+	proto "github.com/gogo/protobuf/proto"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ns "github.com/dms3-fs/go-dms3ns"
+	pb "github.com/dms3-fs/go-dms3ns/pb"
+	logging "github.com/dms3-fs/go-log"
+	dht "github.com/dms3-p2p/go-p2p-kad-dht"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	routing "github.com/dms3-p2p/go-p2p-routing"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
 var log = logging.Logger("namesys")
 
-// IpnsResolver implements NSResolver for the main IPFS SFS-like naming
-type IpnsResolver struct {
+// Dms3NsResolver implements NSResolver for the main DMS3FS SFS-like naming
+type Dms3NsResolver struct {
 	routing routing.ValueStore
 }
 
-// NewIpnsResolver constructs a name resolver using the IPFS Routing system
+// NewDms3NsResolver constructs a name resolver using the DMS3FS Routing system
 // to implement SFS-like naming on top.
-func NewIpnsResolver(route routing.ValueStore) *IpnsResolver {
+func NewDms3NsResolver(route routing.ValueStore) *Dms3NsResolver {
 	if route == nil {
 		panic("attempt to create resolver with nil routing system")
 	}
-	return &IpnsResolver{
+	return &Dms3NsResolver{
 		routing: route,
 	}
 }
 
 // Resolve implements Resolver.
-func (r *IpnsResolver) Resolve(ctx context.Context, name string, options ...opts.ResolveOpt) (path.Path, error) {
-	return resolve(ctx, r, name, opts.ProcessOpts(options), "/ipns/")
+func (r *Dms3NsResolver) Resolve(ctx context.Context, name string, options ...opts.ResolveOpt) (path.Path, error) {
+	return resolve(ctx, r, name, opts.ProcessOpts(options), "/dms3ns/")
 }
 
-// resolveOnce implements resolver. Uses the IPFS routing system to
+// resolveOnce implements resolver. Uses the DMS3FS routing system to
 // resolve SFS-like names.
-func (r *IpnsResolver) resolveOnce(ctx context.Context, name string, options *opts.ResolveOpts) (path.Path, time.Duration, error) {
+func (r *Dms3NsResolver) resolveOnce(ctx context.Context, name string, options *opts.ResolveOpts) (path.Path, time.Duration, error) {
 	log.Debugf("RoutingResolver resolving %s", name)
 
 	if options.DhtTimeout != 0 {
@@ -54,7 +54,7 @@ func (r *IpnsResolver) resolveOnce(ctx context.Context, name string, options *op
 		defer cancel()
 	}
 
-	name = strings.TrimPrefix(name, "/ipns/")
+	name = strings.TrimPrefix(name, "/dms3ns/")
 	hash, err := mh.FromB58String(name)
 	if err != nil {
 		// name should be a multihash. if it isn't, error out here.
@@ -68,10 +68,10 @@ func (r *IpnsResolver) resolveOnce(ctx context.Context, name string, options *op
 		return "", 0, err
 	}
 
-	// Name should be the hash of a public key retrievable from ipfs.
+	// Name should be the hash of a public key retrievable from dms3fs.
 	// We retrieve the public key here to make certain that it's in the peer
 	// store before calling GetValue() on the DHT - the DHT will call the
-	// ipns validator, which in turn will get the public key from the peer
+	// dms3ns validator, which in turn will get the public key from the peer
 	// store to verify the record signature
 	_, err = routing.GetPublicKey(r.routing, ctx, pid)
 	if err != nil {
@@ -80,16 +80,16 @@ func (r *IpnsResolver) resolveOnce(ctx context.Context, name string, options *op
 	}
 
 	// Use the routing system to get the name.
-	// Note that the DHT will call the ipns validator when retrieving
-	// the value, which in turn verifies the ipns record signature
-	ipnsKey := ipns.RecordKey(pid)
-	val, err := r.routing.GetValue(ctx, ipnsKey, dht.Quorum(int(options.DhtRecordCount)))
+	// Note that the DHT will call the dms3ns validator when retrieving
+	// the value, which in turn verifies the dms3ns record signature
+	dms3nsKey := dms3ns.RecordKey(pid)
+	val, err := r.routing.GetValue(ctx, dms3nsKey, dht.Quorum(int(options.DhtRecordCount)))
 	if err != nil {
 		log.Debugf("RoutingResolver: dht get for name %s failed: %s", name, err)
 		return "", 0, err
 	}
 
-	entry := new(pb.IpnsEntry)
+	entry := new(pb.Dms3NsEntry)
 	err = proto.Unmarshal(val, entry)
 	if err != nil {
 		log.Debugf("RoutingResolver: could not unmarshal value for name %s: %s", name, err)
@@ -100,7 +100,7 @@ func (r *IpnsResolver) resolveOnce(ctx context.Context, name string, options *op
 	// check for old style record:
 	if valh, err := mh.Cast(entry.GetValue()); err == nil {
 		// Its an old style multihash record
-		log.Debugf("encountered CIDv0 ipns entry: %s", valh)
+		log.Debugf("encountered CIDv0 dms3ns entry: %s", valh)
 		p = path.FromCid(cid.NewCidV0(valh))
 	} else {
 		// Not a multihash, probably a new record
@@ -114,8 +114,8 @@ func (r *IpnsResolver) resolveOnce(ctx context.Context, name string, options *op
 	if entry.Ttl != nil {
 		ttl = time.Duration(*entry.Ttl)
 	}
-	switch eol, err := ipns.GetEOL(entry); err {
-	case ipns.ErrUnrecognizedValidity:
+	switch eol, err := dms3ns.GetEOL(entry); err {
+	case dms3ns.ErrUnrecognizedValidity:
 		// No EOL.
 	case nil:
 		ttEol := eol.Sub(time.Now())

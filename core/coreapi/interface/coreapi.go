@@ -1,14 +1,14 @@
-// Package iface defines IPFS Core API which is a set of interfaces used to
-// interact with IPFS nodes.
+// Package iface defines DMS3FS Core API which is a set of interfaces used to
+// interact with DMS3FS nodes.
 package iface
 
 import (
 	"context"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
-// CoreAPI defines an unified interface to IPFS for Go programs
+// CoreAPI defines an unified interface to DMS3FS for Go programs
 type CoreAPI interface {
 	// Unixfs returns an implementation of Unixfs API
 	Unixfs() UnixfsAPI
@@ -36,5 +36,5 @@ type CoreAPI interface {
 
 	// ResolveNode resolves the path (if not resolved already) using Unixfs
 	// resolver, gets and returns the resolved Node
-	ResolveNode(context.Context, Path) (ipld.Node, error)
+	ResolveNode(context.Context, Path) (dms3ld.Node, error)
 }

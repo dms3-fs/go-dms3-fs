@@ -9,34 +9,34 @@ import (
 	"strings"
 	"testing"
 
-	core "github.com/ipfs/go-ipfs/core"
-	coreapi "github.com/ipfs/go-ipfs/core/coreapi"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	options "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
-	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
-	keystore "github.com/ipfs/go-ipfs/keystore"
-	repo "github.com/ipfs/go-ipfs/repo"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	coreapi "github.com/dms3-fs/go-dms3-fs/core/coreapi"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	options "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
+	coreunix "github.com/dms3-fs/go-dms3-fs/core/coreunix"
+	keystore "github.com/dms3-fs/go-dms3-fs/keystore"
+	repo "github.com/dms3-fs/go-dms3-fs/repo"
 
-	ci "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	unixfs "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	mdag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	datastore "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	syncds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/sync"
-	cbor "gx/ipfs/QmepvyyduWnXHm1G7ybmGbJfQQHTAo36DjP2nvF7H7ZXjE/go-ipld-cbor"
+	datastore "github.com/dms3-fs/go-datastore"
+	syncds "github.com/dms3-fs/go-datastore/sync"
+	config "github.com/dms3-fs/go-fs-config"
+	cbor "github.com/dms3-fs/go-ld-cbor"
+	mdag "github.com/dms3-fs/go-merkledag"
+	unixfs "github.com/dms3-fs/go-unixfs"
+	ci "github.com/dms3-p2p/go-p2p-crypto"
+	peer "github.com/dms3-p2p/go-p2p-peer"
 )
 
 const testPeerID = "QmTFauExutTsy4XP6JbMFcw2Wa9645HJt2bTqL6qYDCKfe"
 
-// `echo -n 'hello, world!' | ipfs add`
-var hello = "/ipfs/QmQy2Dw4Wk7rdJKjThjYXzfFJNaRKRHhHP5gHHXroJMYxk"
+// `echo -n 'hello, world!' | dms3fs add`
+var hello = "/dms3fs/QmQy2Dw4Wk7rdJKjThjYXzfFJNaRKRHhHP5gHHXroJMYxk"
 var helloStr = "hello, world!"
 
-// `echo -n | ipfs add`
-var emptyFile = "/ipfs/QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
+// `echo -n | dms3fs add`
+var emptyFile = "/dms3fs/QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
 
-func makeAPIIdent(ctx context.Context, fullIdentity bool) (*core.IpfsNode, coreiface.CoreAPI, error) {
+func makeAPIIdent(ctx context.Context, fullIdentity bool) (*core.Dms3FsNode, coreiface.CoreAPI, error) {
 	var ident config.Identity
 	if fullIdentity {
 		sk, pk, err := ci.GenerateKeyPair(ci.RSA, 512)
@@ -79,7 +79,7 @@ func makeAPIIdent(ctx context.Context, fullIdentity bool) (*core.IpfsNode, corei
 	return node, api, nil
 }
 
-func makeAPI(ctx context.Context) (*core.IpfsNode, coreiface.CoreAPI, error) {
+func makeAPI(ctx context.Context) (*core.Dms3FsNode, coreiface.CoreAPI, error) {
 	return makeAPIIdent(ctx, false)
 }
 
@@ -145,7 +145,7 @@ func TestCatBasic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p = "/ipfs/" + p
+	p = "/dms3fs/" + p
 
 	if p != hello {
 		t.Fatalf("expected CID %s, got: %s", hello, p)
@@ -214,18 +214,18 @@ func TestCatDir(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	p := coreiface.IpfsPath(edir.Cid())
+	p := coreiface.Dms3FsPath(edir.Cid())
 
 	emptyDir, err := api.Object().New(ctx, options.Object.Type("unixfs-dir"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	if p.String() != coreiface.IpfsPath(emptyDir.Cid()).String() {
+	if p.String() != coreiface.Dms3FsPath(emptyDir.Cid()).String() {
 		t.Fatalf("expected path %s, got: %s", emptyDir.Cid(), p.String())
 	}
 
-	_, err = api.Unixfs().Cat(ctx, coreiface.IpfsPath(emptyDir.Cid()))
+	_, err = api.Unixfs().Cat(ctx, coreiface.Dms3FsPath(emptyDir.Cid()))
 	if err != coreiface.ErrIsDir {
 		t.Fatalf("expected ErrIsDir, got: %s", err)
 	}
@@ -244,7 +244,7 @@ func TestCatNonUnixfs(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, err = api.Unixfs().Cat(ctx, coreiface.IpfsPath(nd.Cid()))
+	_, err = api.Unixfs().Cat(ctx, coreiface.Dms3FsPath(nd.Cid()))
 	if !strings.Contains(err.Error(), "proto: required field") {
 		t.Fatalf("expected protobuf error, got: %s", err)
 	}
@@ -257,7 +257,7 @@ func TestCatOffline(t *testing.T) {
 		t.Error(err)
 	}
 
-	p, err := coreiface.ParsePath("/ipns/Qmfoobar")
+	p, err := coreiface.ParsePath("/dms3ns/Qmfoobar")
 	if err != nil {
 		t.Error(err)
 	}
@@ -283,7 +283,7 @@ func TestLs(t *testing.T) {
 	if len(parts) != 2 {
 		t.Errorf("unexpected path: %s", k)
 	}
-	p, err := coreiface.ParsePath("/ipfs/" + parts[0])
+	p, err := coreiface.ParsePath("/dms3fs/" + parts[0])
 	if err != nil {
 		t.Error(err)
 	}
@@ -324,7 +324,7 @@ func TestLsEmptyDir(t *testing.T) {
 		t.Error(err)
 	}
 
-	links, err := api.Unixfs().Ls(ctx, coreiface.IpfsPath(emptyDir.Cid()))
+	links, err := api.Unixfs().Ls(ctx, coreiface.Dms3FsPath(emptyDir.Cid()))
 	if err != nil {
 		t.Error(err)
 	}
@@ -352,7 +352,7 @@ func TestLsNonUnixfs(t *testing.T) {
 		t.Error(err)
 	}
 
-	links, err := api.Unixfs().Ls(ctx, coreiface.IpfsPath(nd.Cid()))
+	links, err := api.Unixfs().Ls(ctx, coreiface.Dms3FsPath(nd.Cid()))
 	if err != nil {
 		t.Error(err)
 	}

@@ -1,26 +1,26 @@
 Command Completion
 ==================
 
-Shell command completion is provided by the script at 
-[/misc/completion/ipfs-completion.bash](../misc/completion/ipfs-completion.bash).
+Shell command completion is provided by the script at
+[/misc/completion/dms3fs-completion.bash](../misc/completion/dms3fs-completion.bash).
 
 
 Installation
 ------------
-The simplest way to see it working is to run 
-`source misc/completion/ipfs-completion.bash` straight from your shell. This
+The simplest way to see it working is to run
+`source misc/completion/dms3fs-completion.bash` straight from your shell. This
 is only temporary and to fully enable it, you'll have to follow one of the steps
 below.
 
 ### Bash on Linux
-For bash, completion can be enabled in a couple of ways. One is to copy the 
-completion script to the directory `~/.ipfs/` and then in the file 
+For bash, completion can be enabled in a couple of ways. One is to copy the
+completion script to the directory `~/.dms3-fs/` and then in the file
 `~/.bash_completion` add
 ```bash
-source ~/.ipfs/ipfs-completion.bash
+source ~/.dms3-fs/dms3fs-completion.bash
 ```
 It will automatically be loaded the next time bash is loaded.
-To enable ipfs command completion globally on your system you may also 
+To enable dms3fs command completion globally on your system you may also 
 copy the completion script to `/etc/bash_completion.d/`.
 
 

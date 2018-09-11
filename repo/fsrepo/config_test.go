@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 // note: to test sorting of the mountpoints in the disk spec they are
@@ -72,7 +72,7 @@ var measureConfig = []byte(`{
 }`)
 
 func TestDefaultDatastoreConfig(t *testing.T) {
-	dir, err := ioutil.TempDir("", "ipfs-datastore-config-test")
+	dir, err := ioutil.TempDir("", "dms3fs-datastore-config-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestLevelDbConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir, err := ioutil.TempDir("", "ipfs-datastore-config-test")
+	dir, err := ioutil.TempDir("", "dms3fs-datastore-config-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestFlatfsConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir, err := ioutil.TempDir("", "ipfs-datastore-config-test")
+	dir, err := ioutil.TempDir("", "dms3fs-datastore-config-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,7 +186,7 @@ func TestMeasureConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir, err := ioutil.TempDir("", "ipfs-datastore-config-test")
+	dir, err := ioutil.TempDir("", "dms3fs-datastore-config-test")
 	if err != nil {
 		t.Fatal(err)
 	}

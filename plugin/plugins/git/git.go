@@ -6,13 +6,13 @@ import (
 	"io"
 	"math"
 
-	"github.com/ipfs/go-ipfs/core/coredag"
-	"github.com/ipfs/go-ipfs/plugin"
+	"github.com/dms3-fs/go-dms3-fs/core/coredag"
+	"github.com/dms3-fs/go-dms3-fs/plugin"
 
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	git "gx/ipfs/QmTH9uimkEFHc7HcrFSG2pMskWLSfnRb8HKUngiP7r4iDN/go-ipld-git"
-	"gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	"gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	"github.com/dms3-fs/go-cid"
+	"github.com/dms3-fs/go-ld-format"
+	git "github.com/dms3-fs/go-ld-git"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
 // Plugins is exported list of plugins that will be loaded
@@ -22,10 +22,10 @@ var Plugins = []plugin.Plugin{
 
 type gitPlugin struct{}
 
-var _ plugin.PluginIPLD = (*gitPlugin)(nil)
+var _ plugin.PluginDMS3LD = (*gitPlugin)(nil)
 
 func (*gitPlugin) Name() string {
-	return "ipld-git"
+	return "dms3ld-git"
 }
 
 func (*gitPlugin) Version() string {

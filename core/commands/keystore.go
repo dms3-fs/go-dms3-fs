@@ -5,27 +5,27 @@ import (
 	"io"
 	"text/tabwriter"
 
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	"github.com/ipfs/go-ipfs/core/commands/e"
-	"github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	"github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	"github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 
-	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmds"
 )
 
 var KeyCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Create and list IPNS name keypairs",
+		Tagline: "Create and list DMS3NS name keypairs",
 		ShortDescription: `
-'ipfs key gen' generates a new keypair for usage with IPNS and 'ipfs name
+'dms3fs key gen' generates a new keypair for usage with DMS3NS and 'dms3fs name
 publish'.
 
-  > ipfs key gen --type=rsa --size=2048 mykey
-  > ipfs name publish --key=mykey QmSomeHash
+  > dms3fs key gen --type=rsa --size=2048 mykey
+  > dms3fs name publish --key=mykey QmSomeHash
 
-'ipfs key list' lists the available keys.
+'dms3fs key list' lists the available keys.
 
-  > ipfs key list
+  > dms3fs key list
   self
   mykey
 		`,

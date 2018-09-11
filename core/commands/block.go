@@ -9,15 +9,15 @@ import (
 	"io/ioutil"
 	"os"
 
-	util "github.com/ipfs/go-ipfs/blocks/blockstoreutil"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
+	util "github.com/dms3-fs/go-dms3-fs/blocks/blockstoreutil"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
 
-	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	blocks "gx/ipfs/QmWAzSEoqZ6xU6pu8yL8e5WaMb7wtbfbhhN4p1DknUPtr3/go-block-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	blocks "github.com/dms3-fs/go-block-format"
+	cid "github.com/dms3-fs/go-cid"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmds"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
 type BlockStat struct {
@@ -31,9 +31,9 @@ func (bs BlockStat) String() string {
 
 var BlockCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Interact with raw IPFS blocks.",
+		Tagline: "Interact with raw DMS3FS blocks.",
 		ShortDescription: `
-'ipfs block' is a plumbing command used to manipulate raw IPFS blocks.
+'dms3fs block' is a plumbing command used to manipulate raw DMS3FS blocks.
 Reads from stdin or writes to stdout, and <key> is a base58 encoded
 multihash.
 `,
@@ -49,10 +49,10 @@ multihash.
 
 var blockStatCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Print information of a raw IPFS block.",
+		Tagline: "Print information of a raw DMS3FS block.",
 		ShortDescription: `
-'ipfs block stat' is a plumbing command for retrieving information
-on raw IPFS blocks. It outputs the following to stdout:
+'dms3fs block stat' is a plumbing command for retrieving information
+on raw DMS3FS blocks. It outputs the following to stdout:
 
 	Key  - the base58 encoded multihash
 	Size - the size of the block in bytes
@@ -93,9 +93,9 @@ on raw IPFS blocks. It outputs the following to stdout:
 
 var blockGetCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Get a raw IPFS block.",
+		Tagline: "Get a raw DMS3FS block.",
 		ShortDescription: `
-'ipfs block get' is a plumbing command for retrieving raw IPFS blocks.
+'dms3fs block get' is a plumbing command for retrieving raw DMS3FS blocks.
 It outputs to stdout, and <key> is a base58 encoded multihash.
 `,
 	},
@@ -119,9 +119,9 @@ It outputs to stdout, and <key> is a base58 encoded multihash.
 
 var blockPutCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Store input as an IPFS block.",
+		Tagline: "Store input as an DMS3FS block.",
 		ShortDescription: `
-'ipfs block put' is a plumbing command for storing raw IPFS blocks.
+'dms3fs block put' is a plumbing command for storing raw DMS3FS blocks.
 It reads from stdin, and <key> is a base58 encoded multihash.
 
 By default CIDv0 is going to be generated. Setting 'mhtype' to anything other
@@ -130,7 +130,7 @@ than 'sha2-256' or format to anything other than 'v0' will result in CIDv1.
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.FileArg("data", true, false, "The data to be stored as an IPFS block.").EnableStdin(),
+		cmdkit.FileArg("data", true, false, "The data to be stored as an DMS3FS block.").EnableStdin(),
 	},
 	Options: []cmdkit.Option{
 		cmdkit.StringOption("format", "f", "cid format for blocks to be created with."),
@@ -269,9 +269,9 @@ func getBlockForKey(ctx context.Context, env cmds.Environment, skey string) (blo
 
 var blockRmCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Remove IPFS block(s).",
+		Tagline: "Remove DMS3FS block(s).",
 		ShortDescription: `
-'ipfs block rm' is a plumbing command for removing raw ipfs blocks.
+'dms3fs block rm' is a plumbing command for removing raw dms3fs blocks.
 It takes a list of base58 encoded multihashes to remove.
 `,
 	},

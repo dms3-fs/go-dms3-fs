@@ -5,7 +5,7 @@ machine:
     TEST_NO_DOCKER: 1
     TRAVIS: 1
     CIRCLE: 1
-    IMPORT_PATH: "github.com/ipfs/go-ipfs"
+    IMPORT_PATH: "github.com/dms3-fs/go-dms3-fs"
     GOPATH: "$HOME/.go_workspace"
     GOBIN: "$GOPATH/bin"
     SERVICE: "circle-ci"
@@ -31,7 +31,7 @@ dependencies:
 
   cache_directories:
     - ~/go1.10.2.linux-amd64.tar.gz
-    - ~/.go_workspace/src/gx/ipfs
+    - ~/.go_workspace/src/gx/dms3-fs
 
 test:
   override:

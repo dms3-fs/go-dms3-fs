@@ -12,7 +12,7 @@ include mk/git.mk # has to be before tarball.mk
 include mk/tarball.mk
 include mk/util.mk
 include mk/golang.mk
-include mk/gx.mk
+include mk/dms3gx.mk
 
 # -------------------- #
 #   extra properties   #
@@ -21,7 +21,7 @@ include mk/gx.mk
 ifeq ($(TEST_NO_FUSE),1)
 	GOTAGS += nofuse
 endif
-export IPFS_REUSEPORT=false
+export DMS3-FS_REUSEPORT=false
 
 # -------------------- #
 #       sub-files      #
@@ -36,13 +36,13 @@ include $(dir)/Rules.mk
 dir := test
 include $(dir)/Rules.mk
 
-dir := cmd/ipfs
+dir := cmd/dms3fs
 include $(dir)/Rules.mk
 
 # include this file only if coverage target is executed
 # it is quite expensive
 ifneq ($(filter coverage% clean distclean,$(MAKECMDGOALS)),)
-	# has to be after cmd/ipfs due to PATH
+	# has to be after cmd/dms3fs due to PATH
 	dir := coverage
 	include $(dir)/Rules.mk
 endif
@@ -86,46 +86,46 @@ test: $(TEST)
 test_short: $(TEST_SHORT)
 .PHONY: test_short
 
-deps: gx-deps
+deps: dms3gx-deps
 .PHONY: deps
 
 nofuse: GOTAGS += nofuse
 nofuse: build
 .PHONY: nofuse
 
-install: cmd/ipfs-install
+install: cmd/dms3fs-install
 .PHONY: install
 
 install_unsupported:
 	@echo "note: this command has yet to be tested to build in the system you are using"
-	@echo "installing gx"
-	go get -v -u github.com/whyrusleeping/gx
-	go get -v -u github.com/whyrusleeping/gx-go
-	@echo check gx and gx-go
-	gx -v && gx-go -v
+	@echo "installing dms3gx"
+	go get -v -u github.com/dms3-why/dms3gx
+	go get -v -u github.com/dms3-why/dms3gx-go
+	@echo check dms3gx and dms3gx-go
+	dms3gx -v && dms3gx-go -v
 	@echo downloading dependencies
-	gx install --global
-	@echo "installing go-ipfs"
-	go install -v -tags nofuse ./cmd/ipfs
+	dms3gx install --global
+	@echo "installing go-dms3-fs"
+	go install -v -tags nofuse ./cmd/dms3fs
 .PHONY: install_unsupported
 
 uninstall:
-	go clean -i ./cmd/ipfs
+	go clean -i ./cmd/dms3fs
 .PHONY: uninstall
 
 help:
 	@echo 'DEPENDENCY TARGETS:'
 	@echo ''
-	@echo '  deps                 - Download dependencies using bundled gx'
+	@echo '  deps                 - Download dependencies using bundled dms3gx'
 	@echo '  test_sharness_deps   - Download and build dependencies for sharness'
 	@echo ''
 	@echo 'BUILD TARGETS:'
 	@echo ''
 	@echo '  all          - print this help message'
-	@echo '  build        - Build binary at ./cmd/ipfs/ipfs'
+	@echo '  build        - Build binary at ./cmd/dms3fs/dms3fs'
 	@echo '  nofuse       - Build binary with no fuse support'
 	@echo '  install      - Build binary and install into $$GOPATH/bin'
-#	@echo '  dist_install - TODO: c.f. ./cmd/ipfs/dist/README.md'
+#	@echo '  dist_install - TODO: c.f. ./cmd/dms3fs/dist/README.md'
 	@echo ''
 	@echo 'CLEANING TARGETS:'
 	@echo ''

@@ -1,34 +1,34 @@
-# Experimental features of go-ipfs
+# Experimental features of go-dms3-fs
 
-This document contains a list of experimental features in go-ipfs.
+This document contains a list of experimental features in go-dms3-fs.
 These features, commands, and APIs aren't mature, and you shouldn't rely on them.
 Once they reach maturity, there's going to be mention in the changelog and
 release posts. If they don't reach maturity, the same applies, and their code is
 removed.
 
-Subscribe to https://github.com/ipfs/go-ipfs/issues/3397 to get updates.
+Subscribe to https://github.com/dms3-fs/go-dms3-fs/issues/3397 to get updates.
 
-When you add a new experimental feature to go-ipfs, or change an experimental
+When you add a new experimental feature to go-dms3-fs, or change an experimental
 feature, you MUST please make a PR updating this document, and link the PR in
 the above issue.
 
-- [ipfs pubsub](#ipfs-pubsub)
+- [dms3fs pubsub](#dms3fs-pubsub)
 - [Client mode DHT routing](#client-mode-dht-routing)
 - [go-multiplex stream muxer](#go-multiplex-stream-muxer)
 - [Raw leaves for unixfs files](#raw-leaves-for-unixfs-files)
-- [ipfs filestore](#ipfs-filestore)
-- [ipfs urlstore](#ipfs-urlstore)
+- [dms3fs filestore](#dms3fs-filestore)
+- [dms3fs urlstore](#dms3fs-urlstore)
 - [BadgerDB datastore](#badger-datastore)
 - [Private Networks](#private-networks)
-- [ipfs p2p](#ipfs-p2p)
+- [dms3fs p2p](#dms3fs-p2p)
 - [Circuit Relay](#circuit-relay)
 - [Plugins](#plugins)
 - [Directory Sharding / HAMT](#directory-sharding-hamt)
-- [IPNS PubSub](#ipns-pubsub)
+- [DMS3NS PubSub](#dms3ns-pubsub)
 
 ---
 
-## ipfs pubsub
+## dms3fs pubsub
 
 ### State
 
@@ -41,17 +41,17 @@ experimental, default-disabled.
 ### How to enable
 
 run your daemon with the `--enable-pubsub-experiment` flag. Then use the
-`ipfs pubsub` commands.
+`dms3fs pubsub` commands.
 
 ### gossipsub
 
 Gossipsub is a new, experimental routing protocol for pubsub that
 should waste less bandwidth than floodsub, the current pubsub
 protocol. It's backwards compatible with floodsub so enabling this
-feature shouldn't break compatibility with existing IPFS nodes.
+feature shouldn't break compatibility with existing DMS3FS nodes.
 
 You can enable gossipsub via configuration:
-`ipfs config Pubsub.Router gossipsub`
+`dms3fs config Pubsub.Router gossipsub`
 
 ### Road to being a real feature
 - [ ] Needs more people to use and report on how well it works
@@ -101,9 +101,9 @@ export LIBP2P_MUX_PREFS="/mplex/6.7.0 /yamux/1.0.0 /spdy/3.1.0"
 ```
 
 To check which stream muxer is being used between any two given peers, check the
-json output of the `ipfs swarm peers` command, you'll see something like this:
+json output of the `dms3fs swarm peers` command, you'll see something like this:
 ```
-$ ipfs swarm peers -v --enc=json | jq .
+$ dms3fs swarm peers -v --enc=json | jq .
 {
   "Peers": [
     {
@@ -113,13 +113,13 @@ $ ipfs swarm peers -v --enc=json | jq .
       "Muxer": "*peerstream_multiplex.conn",
       "Streams": [
         {
-          "Protocol": "/ipfs/bitswap/1.1.0"
+          "Protocol": "/dms3fs/bitswap/1.1.0"
         },
         {
-          "Protocol": "/ipfs/kad/1.0.0"
+          "Protocol": "/dms3fs/kad/1.0.0"
         },
         {
-          "Protocol": "/ipfs/kad/1.0.0"
+          "Protocol": "/dms3fs/kad/1.0.0"
         }
       ]
     },
@@ -143,14 +143,14 @@ experimental.
 master, 0.4.5
 
 ### How to enable
-Use `--raw-leaves` flag when calling `ipfs add`.
+Use `--raw-leaves` flag when calling `dms3fs add`.
 
 ### Road to being a real feature
 - [ ] Needs more people to use and report on how well it works.
 
 ---
 
-## ipfs filestore
+## dms3fs filestore
 Allows files to be added without duplicating the space they take up on disk.
 
 ### State
@@ -160,12 +160,12 @@ experimental.
 master, 0.4.7
 
 ### How to enable
-Modify your ipfs config:
+Modify your dms3fs config:
 ```
-ipfs config --json Experimental.FilestoreEnabled true
+dms3fs config --json Experimental.FilestoreEnabled true
 ```
 
-And then pass the `--nocopy` flag when running `ipfs add`
+And then pass the `--nocopy` flag when running `dms3fs add`
 
 ### Road to being a real feature
 - [ ] Needs more people to use and report on how well it works.
@@ -175,8 +175,8 @@ And then pass the `--nocopy` flag when running `ipfs add`
 
 ---
 
-## ipfs urlstore
-Allows ipfs to retrieve blocks contents via a url instead of storing it in the datastore
+## dms3fs urlstore
+Allows dms3fs to retrieve blocks contents via a url instead of storing it in the datastore
 
 ### State
 experimental.
@@ -185,9 +185,9 @@ experimental.
 ???.
 
 ### How to enable
-Modify your ipfs config:
+Modify your dms3fs config:
 ```
-ipfs config --json Experimental.UrlstoreEnabled true
+dms3fs config --json Experimental.UrlstoreEnabled true
 ```
 
 ### Road to being a real feature
@@ -197,7 +197,7 @@ ipfs config --json Experimental.UrlstoreEnabled true
 
 ## Private Networks
 
-Allows ipfs to only connect to other peers who have a shared secret key.
+Allows dms3fs to only connect to other peers who have a shared secret key.
 
 ### State
 Experimental
@@ -206,14 +206,14 @@ Experimental
 master, 0.4.7
 
 ### How to enable
-Generate a pre-shared-key using [ipfs-swarm-key-gen](https://github.com/Kubuxu/go-ipfs-swarm-key-gen)):
+Generate a pre-shared-key using [dms3fs-swarm-key-gen](https://github.com/Kubuxu/go-ipfs-swarm-key-gen)):
 ```
 go get github.com/Kubuxu/go-ipfs-swarm-key-gen/ipfs-swarm-key-gen
 ipfs-swarm-key-gen > ~/.ipfs/swarm.key
 ```
 
 To join a given private network, get the key file from someone in the network
-and save it to `~/.ipfs/swarm.key` (If you are using a custom `$IPFS_PATH`, put
+and save it to `~/.ipfs/swarm.key` (If you are using a custom `$DMS3FS_PATH`, put
 it in there instead).
 
 When using this feature, you will not be able to connect to the default bootstrap
@@ -222,17 +222,17 @@ your own bootstrap nodes.
 
 First, to prevent your node from even trying to connect to the default bootstrap nodes, run:
 ```bash
-ipfs bootstrap rm --all
+dms3fs bootstrap rm --all
 ```
 
 Then add your own bootstrap peers with:
 ```bash
-ipfs bootstrap add <multiaddr>
+dms3fs bootstrap add <multiaddr>
 ```
 
 For example:
 ```
-ipfs bootstrap add /ip4/104.236.76.40/tcp/4001/ipfs/QmSoLV4Bbm51jM9C4gDYZQ9Cy3U6aXMJDAbzgu2fzaDs64
+dms3fs bootstrap add /ip4/104.236.76.40/tcp/4001/dms3fs/QmSoLV4Bbm51jM9C4gDYZQ9Cy3U6aXMJDAbzgu2fzaDs64
 ```
 
 Bootstrap nodes are no different from all other nodes in the network apart from
@@ -248,7 +248,7 @@ configured, the daemon will fail to start.
 
 ---
 
-## ipfs p2p
+## dms3fs p2p
 Allows to tunnel TCP connections through Libp2p streams
 
 ### State
@@ -260,18 +260,18 @@ master, 0.4.10
 ### How to enable
 P2P command needs to be enabled in config
 
-`ipfs config --json Experimental.Libp2pStreamMounting true`
+`dms3fs config --json Experimental.Libp2pStreamMounting true`
 
 ### How to use
 
 Basic usage:
 
 - Open a listener on one node (node A)
-`ipfs p2p listener open p2p-test /ip4/127.0.0.1/tcp/10101`
+`dms3fs p2p listener open p2p-test /ip4/127.0.0.1/tcp/10101`
 - Where `/ip4/127.0.0.1/tcp/10101` put address of application you want to pass
   p2p connections to
 - On the other node, connect to the listener on node A
-`ipfs p2p stream dial $NODE_A_PEERID p2p-test /ip4/127.0.0.1/tcp/10102`
+`dms3fs p2p stream dial $NODE_A_PEERID p2p-test /ip4/127.0.0.1/tcp/10102`
 - Node B is now listening for a connection on TCP at 127.0.0.1:10102, connect
   your application there to complete the connection
 
@@ -309,16 +309,16 @@ already online node would have to be restarted.
 In order to connect peers QmA and QmB through a relay node QmRelay:
 
 - Both peers should connect to the relay:
-`ipfs swarm connect /transport/address/ipfs/QmRelay`
+`dms3fs swarm connect /transport/address/dms3fs/QmRelay`
 - Peer QmA can then connect to peer QmB using the relay:
-`ipfs swarm connect /ipfs/QmRelay/p2p-circuit/ipfs/QmB`
+`dms3fs swarm connect /dms3fs/QmRelay/p2p-circuit/dms3fs/QmB`
 
 Peers can also connect with an unspecific relay address, which will
 try to dial through known relays:
-`ipfs swarm connect /p2p-circuit/ipfs/QmB`
+`dms3fs swarm connect /p2p-circuit/dms3fs/QmB`
 
 Peers can see their (unspecific) relay address in the output of
-`ipfs swarm addrs listen`
+`dms3fs swarm addrs listen`
 
 ### Road to being a real feature
 
@@ -362,13 +362,13 @@ See [Plugin docs](./plugins.md)
  ### Basic Usage
 
  ```
- $ ipfs init --profile=badgerds
+ $ dms3fs init --profile=badgerds
  ```
  or
  ```
- [BACKUP ~/.ipfs]
- $ ipfs config profile apply badgerds
- $ ipfs-ds-convert convert
+ [BACKUP ~/.dms3fs]
+ $ dms3fs config profile apply badgerds
+ $ dms3fs-ds-convert convert
  ```
 
 ###
@@ -392,17 +392,17 @@ size of unixfs directories is limited by the maximum block size
 ### Basic Usage:
 
 ```
-ipfs config --json Experimental.ShardingEnabled true
+dms3fs config --json Experimental.ShardingEnabled true
 ```
 
 ### Road to being a real feature
 
 - [ ] Make sure that objects that don't have to be sharded aren't
-- [ ] Generalize sharding and define a new layer between IPLD and IPFS
+- [ ] Generalize sharding and define a new layer between DMS3LD and DMS3FS
 
 ---
 
-## IPNS pubsub
+## DMS3NS pubsub
 
 ### In Version
 
@@ -412,12 +412,12 @@ ipfs config --json Experimental.ShardingEnabled true
 
 Experimental, default-disabled.
 
-Utilizes pubsub for publishing ipns records in real time.
+Utilizes pubsub for publishing dms3ns records in real time.
 
 When it is enabled:
-- IPNS publishers push records to a name-specific pubsub topic,
+- DMS3NS publishers push records to a name-specific pubsub topic,
   in addition to publishing to the DHT.
-- IPNS resolvers subscribe to the name-specific topic on first
+- DMS3NS resolvers subscribe to the name-specific topic on first
   resolution and receive subsequently published records through pubsub
   in real time. This makes subsequent resolutions instant, as they
   are resolved through the local cache. Note that the initial

@@ -9,10 +9,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/ipfs/go-ipfs/Godeps/_workspace/src/github.com/jbenet/go-random"
-	"github.com/ipfs/go-ipfs/thirdparty/unit"
+	"github.com/dms3-fs/go-dms3-fs/Godeps/_workspace/src/github.com/jbenet/go-random"
+	"github.com/dms3-fs/go-dms3-fs/thirdparty/unit"
 
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 func main() {
@@ -49,7 +49,7 @@ func benchmarkAdd(amount int64) (*testing.BenchmarkResult, error) {
 				cmd.Env = env
 			}
 
-			cmd := exec.Command("ipfs", "init", "-b=1024")
+			cmd := exec.Command("dms3fs", "init", "-b=1024")
 			setupCmd(cmd)
 			if err := cmd.Run(); err != nil {
 				b.Fatal(err)
@@ -68,7 +68,7 @@ func benchmarkAdd(amount int64) (*testing.BenchmarkResult, error) {
 			}
 
 			b.StartTimer()
-			cmd = exec.Command("ipfs", "add", f.Name())
+			cmd = exec.Command("dms3fs", "add", f.Name())
 			setupCmd(cmd)
 			if err := cmd.Run(); err != nil {
 				b.Fatal(err)

@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	core "github.com/ipfs/go-ipfs/core"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	core "github.com/dms3-fs/go-dms3-fs/core"
 
-	u "gx/ipfs/QmPdKqUcHGFdeSpvjVoaTRPPstGif9GBZb5Q56RVw9o69A/go-ipfs-util"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	u "github.com/dms3-fs/go-fs-util"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	ma "github.com/dms3-mft/go-multiaddr"
 )
 
 const kPingTimeout = 10 * time.Second
@@ -32,9 +32,9 @@ var ErrPingSelf = errors.New("error: can't ping self")
 
 var PingCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Send echo request packets to IPFS hosts.",
+		Tagline: "Send echo request packets to DMS3FS hosts.",
 		ShortDescription: `
-'ipfs ping' is a tool to test sending data to other nodes. It finds nodes
+'dms3fs ping' is a tool to test sending data to other nodes. It finds nodes
 via the routing system, sends pings, waits for pongs, and prints out round-
 trip latency information.
 		`,
@@ -113,7 +113,7 @@ trip latency information.
 	Type: PingResult{},
 }
 
-func pingPeer(ctx context.Context, n *core.IpfsNode, pid peer.ID, numPings int) <-chan interface{} {
+func pingPeer(ctx context.Context, n *core.Dms3FsNode, pid peer.ID, numPings int) <-chan interface{} {
 	outChan := make(chan interface{})
 	go func() {
 		defer close(outChan)

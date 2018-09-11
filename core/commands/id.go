@@ -8,25 +8,25 @@ import (
 	"io"
 	"strings"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	core "github.com/ipfs/go-ipfs/core"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
 
-	ic "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	identify "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/protocol/identify"
-	"gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	kb "gx/ipfs/QmXZMdRKt6jtP6dBAkQpX98aAY9iynKAkaZa5CVkMG5uD2/go-libp2p-kbucket"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	ic "github.com/dms3-p2p/go-p2p-crypto"
+	kb "github.com/dms3-p2p/go-p2p-kbucket"
+	"github.com/dms3-p2p/go-p2p-peer"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	identify "github.com/dms3-p2p/go-p2p/p2p/protocol/identify"
 )
 
-const offlineIdErrorMessage = `'ipfs id' currently cannot query information on remote
+const offlineIdErrorMessage = `'dms3fs id' currently cannot query information on remote
 peers without a running daemon; we are working to fix this.
-In the meantime, if you want to query remote peers using 'ipfs id',
+In the meantime, if you want to query remote peers using 'dms3fs id',
 please run the daemon:
 
-    ipfs daemon &
-    ipfs id QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ
+    dms3fs daemon &
+    dms3fs id QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ
 `
 
 type IdOutput struct {
@@ -39,12 +39,12 @@ type IdOutput struct {
 
 var IDCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Show ipfs node id info.",
+		Tagline: "Show dms3fs node id info.",
 		ShortDescription: `
 Prints out information about the specified peer.
 If no peer is specified, prints out information for local peers.
 
-'ipfs id' supports the format option for output with the following keys:
+'dms3fs id' supports the format option for output with the following keys:
 <id> : The peers id.
 <aver>: Agent version.
 <pver>: Protocol version.
@@ -53,7 +53,7 @@ If no peer is specified, prints out information for local peers.
 
 EXAMPLE:
 
-    ipfs id Qmece2RkXhsKe5CRooNisBTh4SK119KrXXGmoK6V3kb8aH -f="<addrs>\n"
+    dms3fs id Qmece2RkXhsKe5CRooNisBTh4SK119KrXXGmoK6V3kb8aH -f="<addrs>\n"
 `,
 	},
 	Arguments: []cmdkit.Argument{
@@ -189,7 +189,7 @@ func printPeer(ps pstore.Peerstore, p peer.ID) (interface{}, error) {
 }
 
 // printing self is special cased as we get values differently.
-func printSelf(node *core.IpfsNode) (interface{}, error) {
+func printSelf(node *core.Dms3FsNode) (interface{}, error) {
 	info := new(IdOutput)
 	info.ID = node.Identity.Pretty()
 
@@ -208,7 +208,7 @@ func printSelf(node *core.IpfsNode) (interface{}, error) {
 
 	if node.PeerHost != nil {
 		for _, a := range node.PeerHost.Addrs() {
-			s := a.String() + "/ipfs/" + info.ID
+			s := a.String() + "/dms3fs/" + info.ID
 			info.Addresses = append(info.Addresses, s)
 		}
 	}

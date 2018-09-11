@@ -9,15 +9,15 @@ import (
 	"strconv"
 	"strings"
 
-	version "github.com/ipfs/go-ipfs"
-	oldcmds "github.com/ipfs/go-ipfs/commands"
-	"github.com/ipfs/go-ipfs/core"
-	corecommands "github.com/ipfs/go-ipfs/core/commands"
+	version "github.com/dms3-fs/go-dms3-fs"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	corecommands "github.com/dms3-fs/go-dms3-fs/core/commands"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	cmdsHttp "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds/http"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	cmdsHttp "github.com/dms3-fs/go-fs-cmds/http"
+	config "github.com/dms3-fs/go-fs-config"
+	path "github.com/dms3-fs/go-path"
 )
 
 var (
@@ -30,12 +30,12 @@ This functionality is deprecated, and will be removed in future versions.
 Instead, try either adding headers to the config, or passing them via
 cli arguments:
 
-	ipfs config API.HTTPHeaders 'Access-Control-Allow-Origin' '*'
-	ipfs daemon
+	dms3fs config API.HTTPHeaders 'Access-Control-Allow-Origin' '*'
+	dms3fs daemon
 
 or
 
-	ipfs daemon --api-http-header 'Access-Control-Allow-Origin: *'
+	dms3fs daemon --api-http-header 'Access-Control-Allow-Origin: *'
 `
 
 // APIPath is the path at which the API is mounted.
@@ -78,7 +78,7 @@ func addHeadersFromConfig(c *cmdsHttp.ServerConfig, nc *config.Config) {
 	for h, v := range nc.API.HTTPHeaders {
 		c.Headers[h] = v
 	}
-	c.Headers["Server"] = []string{"go-ipfs/" + version.CurrentVersionNumber}
+	c.Headers["Server"] = []string{"go-dms3-fs/" + version.CurrentVersionNumber}
 }
 
 func addCORSDefaults(c *cmdsHttp.ServerConfig) {
@@ -118,7 +118,7 @@ func patchCORSVars(c *cmdsHttp.ServerConfig, addr net.Addr) {
 }
 
 func commandsOption(cctx oldcmds.Context, command *cmds.Command) ServeOption {
-	return func(n *core.IpfsNode, l net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
+	return func(n *core.Dms3FsNode, l net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
 
 		cfg := cmdsHttp.NewServerConfig()
 		cfg.SetAllowedMethods("GET", "POST", "PUT")
@@ -151,11 +151,11 @@ func CommandsROOption(cctx oldcmds.Context) ServeOption {
 	return commandsOption(cctx, corecommands.RootRO)
 }
 
-// CheckVersionOption returns a ServeOption that checks whether the client ipfs version matches. Does nothing when the user agent string does not contain `/go-ipfs/`
+// CheckVersionOption returns a ServeOption that checks whether the client dms3fs version matches. Does nothing when the user agent string does not contain `/go-dms3-fs/`
 func CheckVersionOption() ServeOption {
 	daemonVersion := version.ApiVersion
 
-	return ServeOption(func(n *core.IpfsNode, l net.Listener, parent *http.ServeMux) (*http.ServeMux, error) {
+	return ServeOption(func(n *core.Dms3FsNode, l net.Listener, parent *http.ServeMux) (*http.ServeMux, error) {
 		mux := http.NewServeMux()
 		parent.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasPrefix(r.URL.Path, APIPath) {
@@ -165,8 +165,8 @@ func CheckVersionOption() ServeOption {
 				// backwards compatibility to previous version check
 				if len(pth) >= 2 && pth[1] != "version" {
 					clientVersion := r.UserAgent()
-					// skips check if client is not go-ipfs
-					if strings.Contains(clientVersion, "/go-ipfs/") && daemonVersion != clientVersion {
+					// skips check if client is not go-dms3-fs
+					if strings.Contains(clientVersion, "/go-dms3-fs/") && daemonVersion != clientVersion {
 						http.Error(w, fmt.Sprintf("%s (%s != %s)", errAPIVersionMismatch, daemonVersion, clientVersion), http.StatusBadRequest)
 						return
 					}

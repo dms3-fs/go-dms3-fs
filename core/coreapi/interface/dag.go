@@ -4,9 +4,9 @@ import (
 	"context"
 	"io"
 
-	"github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	"github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 // DagOps groups operations that can be batched together
@@ -26,12 +26,12 @@ type DagBatch interface {
 	Commit(ctx context.Context) error
 }
 
-// DagAPI specifies the interface to IPLD
+// DagAPI specifies the interface to DMS3LD
 type DagAPI interface {
 	DagOps
 
 	// Get attempts to resolve and get the node specified by the path
-	Get(ctx context.Context, path Path) (ipld.Node, error)
+	Get(ctx context.Context, path Path) (dms3ld.Node, error)
 
 	// Tree returns list of paths within a node specified by the path.
 	Tree(ctx context.Context, path Path, opts ...options.DagTreeOption) ([]Path, error)

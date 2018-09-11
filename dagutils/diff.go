@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"path"
 
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
 
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	"gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	"github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	dag "github.com/dms3-fs/go-merkledag"
 )
 
 // These constants define the changes that can be applied to a DAG.
@@ -43,7 +43,7 @@ func (c *Change) String() string {
 }
 
 // ApplyChange applies the requested changes to the given node in the given dag.
-func ApplyChange(ctx context.Context, ds ipld.DAGService, nd *dag.ProtoNode, cs []*Change) (*dag.ProtoNode, error) {
+func ApplyChange(ctx context.Context, ds dms3ld.DAGService, nd *dag.ProtoNode, cs []*Change) (*dag.ProtoNode, error) {
 	e := NewDagEditor(nd, ds)
 	for _, c := range cs {
 		switch c.Type {
@@ -95,7 +95,7 @@ func ApplyChange(ctx context.Context, ds ipld.DAGService, nd *dag.ProtoNode, cs 
 }
 
 // Diff returns a set of changes that transform node 'a' into node 'b'
-func Diff(ctx context.Context, ds ipld.DAGService, a, b ipld.Node) ([]*Change, error) {
+func Diff(ctx context.Context, ds dms3ld.DAGService, a, b dms3ld.Node) ([]*Change, error) {
 	// Base case where both nodes are leaves, just compare
 	// their CIDs.
 	if len(a.Links()) == 0 && len(b.Links()) == 0 {

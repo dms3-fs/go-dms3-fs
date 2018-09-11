@@ -1,12 +1,12 @@
-ipfs bootstrap add /ip4/$BOOTSTRAP_PORT_4011_TCP_ADDR/tcp/$BOOTSTRAP_PORT_4011_TCP_PORT/ipfs/QmNXuBh8HFsWq68Fid8dMbGNQTh7eG6hV9rr1fQyfmfomE
-ipfs bootstrap # list bootstrap nodes for debugging
+dms3fs bootstrap add /ip4/$BOOTSTRAP_PORT_4011_TCP_ADDR/tcp/$BOOTSTRAP_PORT_4011_TCP_PORT/dms3fs/QmNXuBh8HFsWq68Fid8dMbGNQTh7eG6hV9rr1fQyfmfomE
+dms3fs bootstrap # list bootstrap nodes for debugging
 
 echo "3nodetest> starting client daemon"
 
-ipfs daemon --debug &
+dms3fs daemon --debug &
 sleep 3
 
-# switch dirs so ipfs client profiling data doesn't overwrite the ipfs daemon
+# switch dirs so dms3fs client profiling data doesn't overwrite the dms3fs daemon
 # profiling data
 cd /tmp
 
@@ -17,7 +17,7 @@ do
 done
 echo "3nodetest> client found file with hash:" $(cat /data/idtiny)
 
-ipfs cat $(cat /data/idtiny) > filetiny
+dms3fs cat $(cat /data/idtiny) > filetiny
 
 cat filetiny
 
@@ -37,10 +37,10 @@ echo "3nodetest> client found file with hash:" $(cat /data/idrand)
 
 cat /data/idrand
 
-ipfs cat $(cat /data/idrand) > filerand
+dms3fs cat $(cat /data/idrand) > filerand
 
 if (($? > 0)); then
-    printf '%s\n' 'ipfs cat failed' >&2
+    printf '%s\n' 'dms3fs cat failed' >&2
     exit 1
 fi
 

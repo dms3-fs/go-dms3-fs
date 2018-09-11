@@ -8,15 +8,15 @@ import (
 	"io"
 	"strings"
 
-	"github.com/ipfs/go-ipfs/dagutils"
-	importer "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/importer"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	"github.com/dms3-fs/go-dms3-fs/dagutils"
+	dag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
+	importer "github.com/dms3-fs/go-unixfs/importer"
+	uio "github.com/dms3-fs/go-unixfs/io"
 
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	chunker "gx/ipfs/QmXzBbJo2sLf3uwjNTeoWYiJV7CjAhkiA4twtLvwJSSNdK/go-ipfs-chunker"
+	chunker "github.com/dms3-fs/go-fs-chunker"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	logging "github.com/dms3-fs/go-log"
 )
 
 var log = logging.Logger("tarfmt")
@@ -36,11 +36,11 @@ func marshalHeader(h *tar.Header) ([]byte, error) {
 
 // ImportTar imports a tar file into the given DAGService and returns the root
 // node.
-func ImportTar(ctx context.Context, r io.Reader, ds ipld.DAGService) (*dag.ProtoNode, error) {
+func ImportTar(ctx context.Context, r io.Reader, ds dms3ld.DAGService) (*dag.ProtoNode, error) {
 	tr := tar.NewReader(r)
 
 	root := new(dag.ProtoNode)
-	root.SetData([]byte("ipfs/tar"))
+	root.SetData([]byte("dms3fs/tar"))
 
 	e := dagutils.NewDagEditor(root, ds)
 
@@ -101,8 +101,8 @@ func escapePath(pth string) string {
 }
 
 type tarReader struct {
-	links []*ipld.Link
-	ds    ipld.DAGService
+	links []*dms3ld.Link
+	ds    dms3ld.DAGService
 
 	childRead *tarReader
 	hdrBuf    *bytes.Reader
@@ -198,9 +198,9 @@ func (tr *tarReader) Read(b []byte) (int, error) {
 
 // ExportTar exports the passed DAG as a tar file. This function is the inverse
 // of ImportTar.
-func ExportTar(ctx context.Context, root *dag.ProtoNode, ds ipld.DAGService) (io.Reader, error) {
-	if string(root.Data()) != "ipfs/tar" {
-		return nil, errors.New("not an IPFS tarchive")
+func ExportTar(ctx context.Context, root *dag.ProtoNode, ds dms3ld.DAGService) (io.Reader, error) {
+	if string(root.Data()) != "dms3fs/tar" {
+		return nil, errors.New("not an DMS3FS tarchive")
 	}
 	return &tarReader{
 		links: root.Links(),

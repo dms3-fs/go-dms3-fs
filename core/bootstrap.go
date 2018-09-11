@@ -9,24 +9,24 @@ import (
 	"sync"
 	"time"
 
-	math2 "github.com/ipfs/go-ipfs/thirdparty/math2"
-	lgbl "gx/ipfs/QmZ4zF1mBrt8C2mSCM4ZYE4aAnv78f7GvrzufJC4G5tecK/go-libp2p-loggables"
+	math2 "github.com/dms3-fs/go-dms3-fs/thirdparty/math2"
+	lgbl "github.com/dms3-p2p/go-p2p-loggables"
 
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	host "gx/ipfs/QmRRCrNRs4qxotXx7WJT6SpCvSNEhXvyBcVjXY2K71pcjE/go-libp2p-host"
-	goprocess "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
-	procctx "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/context"
-	periodicproc "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/periodic"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	inet "gx/ipfs/QmX5J1q63BrrDTbpcHifrFbxH3cMZsvaNajy6u3zCpzBXs/go-libp2p-net"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	config "github.com/dms3-fs/go-fs-config"
+	goprocess "github.com/jbenet/goprocess"
+	procctx "github.com/jbenet/goprocess/context"
+	periodicproc "github.com/jbenet/goprocess/periodic"
+	host "github.com/dms3-p2p/go-p2p-host"
+	inet "github.com/dms3-p2p/go-p2p-net"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
 )
 
 // ErrNotEnoughBootstrapPeers signals that we do not have enough bootstrap
 // peers to bootstrap correctly.
 var ErrNotEnoughBootstrapPeers = errors.New("not enough bootstrap peers to bootstrap")
 
-// BootstrapConfig specifies parameters used in an IpfsNode's network
+// BootstrapConfig specifies parameters used in an Dms3FsNode's network
 // bootstrapping process.
 type BootstrapConfig struct {
 
@@ -34,7 +34,7 @@ type BootstrapConfig struct {
 	// node has less open connections than this number, it will open connections
 	// to the bootstrap nodes. From there, the routing system should be able
 	// to use the connections to the bootstrap nodes to connect to even more
-	// peers. Routing systems like the IpfsDHT do so in their own Bootstrap
+	// peers. Routing systems like the Dms3FsDHT do so in their own Bootstrap
 	// process, which issues random queries to find more peers.
 	MinPeerThreshold int
 
@@ -68,11 +68,11 @@ func BootstrapConfigWithPeers(pis []pstore.PeerInfo) BootstrapConfig {
 	return cfg
 }
 
-// Bootstrap kicks off IpfsNode bootstrapping. This function will periodically
+// Bootstrap kicks off Dms3FsNode bootstrapping. This function will periodically
 // check the number of open connections and -- if there are too few -- initiate
 // connections to well-known bootstrap peers. It also kicks off subsystem
 // bootstrapping (i.e. routing).
-func Bootstrap(n *IpfsNode, cfg BootstrapConfig) (io.Closer, error) {
+func Bootstrap(n *Dms3FsNode, cfg BootstrapConfig) (io.Closer, error) {
 
 	// make a signal to wait for one bootstrap round to complete.
 	doneWithRound := make(chan struct{})

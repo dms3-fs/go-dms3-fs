@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"text/tabwriter"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	core "github.com/ipfs/go-ipfs/core"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	core "github.com/dms3-fs/go-dms3-fs/core"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	ma "github.com/dms3-mft/go-multiaddr"
 )
 
 // P2PListenerInfoOutput is output type of ls command
@@ -41,12 +41,12 @@ type P2PStreamsOutput struct {
 	Streams []P2PStreamInfoOutput
 }
 
-// P2PCmd is the 'ipfs p2p' command
+// P2PCmd is the 'dms3fs p2p' command
 var P2PCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Libp2p stream mounting.",
 		ShortDescription: `
-Create and use tunnels to remote peers over libp2p
+Create and use tunnels to remote peers over dms3-p2p
 
 Note: this command is experimental and subject to change as usecases and APIs
 are refined`,
@@ -58,7 +58,7 @@ are refined`,
 	},
 }
 
-// p2pListenerCmd is the 'ipfs p2p listener' command
+// p2pListenerCmd is the 'dms3fs p2p listener' command
 var p2pListenerCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline:          "P2P listener management.",
@@ -72,7 +72,7 @@ var p2pListenerCmd = &cmds.Command{
 	},
 }
 
-// p2pStreamCmd is the 'ipfs p2p stream' command
+// p2pStreamCmd is the 'dms3fs p2p stream' command
 var p2pStreamCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline:          "P2P stream management.",
@@ -203,7 +203,7 @@ var p2pListenerListenCmd = &cmds.Command{
 Register a p2p connection handler and forward the connections to a specified
 address.
 
-Note that the connections originate from the ipfs daemon process.
+Note that the connections originate from the dms3fs daemon process.
 		`,
 	},
 	Arguments: []cmdkit.Argument{
@@ -250,7 +250,7 @@ var p2pStreamDialCmd = &cmds.Command{
 		ShortDescription: `
 Establish a new connection to a peer service.
 
-When a connection is made to a peer service the ipfs daemon will setup one
+When a connection is made to a peer service the dms3fs daemon will setup one
 time TCP listener and return it's bind port, this way a dialing application
 can transparently connect to a p2p service.
 		`,
@@ -389,7 +389,7 @@ var p2pStreamCloseCmd = &cmds.Command{
 	},
 }
 
-func getNode(req cmds.Request) (*core.IpfsNode, error) {
+func getNode(req cmds.Request) (*core.Dms3FsNode, error) {
 	n, err := req.InvocContext().GetNode()
 	if err != nil {
 		return nil, err
@@ -401,7 +401,7 @@ func getNode(req cmds.Request) (*core.IpfsNode, error) {
 	}
 
 	if !config.Experimental.Libp2pStreamMounting {
-		return nil, errors.New("libp2p stream mounting not enabled")
+		return nil, errors.New("dms3-p2p stream mounting not enabled")
 	}
 
 	if !n.OnlineMode() {

@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"sort"
 
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	caopts "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
-	ipfspath "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	caopts "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
+	dms3fspath "github.com/dms3-fs/go-path"
 
-	crypto "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
+	crypto "github.com/dms3-p2p/go-p2p-crypto"
+	peer "github.com/dms3-p2p/go-p2p-peer"
 )
 
 type KeyAPI CoreAPI
@@ -28,7 +28,7 @@ func (k *key) Name() string {
 
 // Path returns the path of the key.
 func (k *key) Path() coreiface.Path {
-	path, err := coreiface.ParsePath(ipfspath.Join([]string{"/ipns", k.peerID.Pretty()}))
+	path, err := coreiface.ParsePath(dms3fspath.Join([]string{"/dms3ns", k.peerID.Pretty()}))
 	if err != nil {
 		panic("error parsing path: " + err.Error())
 	}
@@ -183,7 +183,7 @@ func (api *KeyAPI) Rename(ctx context.Context, oldName string, newName string, o
 	return &key{newName, pid}, overwrite, ks.Delete(oldName)
 }
 
-// Remove removes keys from keystore. Returns ipns path of the removed key.
+// Remove removes keys from keystore. Returns dms3ns path of the removed key.
 func (api *KeyAPI) Remove(ctx context.Context, name string) (coreiface.Key, error) {
 	ks := api.node.Repo.Keystore()
 

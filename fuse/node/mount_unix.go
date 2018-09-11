@@ -8,12 +8,12 @@ import (
 	"strings"
 	"sync"
 
-	core "github.com/ipfs/go-ipfs/core"
-	ipns "github.com/ipfs/go-ipfs/fuse/ipns"
-	mount "github.com/ipfs/go-ipfs/fuse/mount"
-	rofs "github.com/ipfs/go-ipfs/fuse/readonly"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	dms3ns "github.com/dms3-fs/go-dms3-fs/fuse/dms3ns"
+	mount "github.com/dms3-fs/go-dms3-fs/fuse/mount"
+	rofs "github.com/dms3-fs/go-dms3-fs/fuse/readonly"
 
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
+	logging "github.com/dms3-fs/go-log"
 )
 
 var log = logging.Logger("node")
@@ -26,19 +26,19 @@ const fuseExitStatus1 = "fusermount: exit status 1"
 
 // platformFuseChecks can get overridden by arch-specific files
 // to run fuse checks (like checking the OSXFUSE version)
-var platformFuseChecks = func(*core.IpfsNode) error {
+var platformFuseChecks = func(*core.Dms3FsNode) error {
 	return nil
 }
 
-func Mount(node *core.IpfsNode, fsdir, nsdir string) error {
+func Mount(node *core.Dms3FsNode, fsdir, nsdir string) error {
 	// check if we already have live mounts.
 	// if the user said "Mount", then there must be something wrong.
 	// so, close them and try again.
-	if node.Mounts.Ipfs != nil && node.Mounts.Ipfs.IsActive() {
-		node.Mounts.Ipfs.Unmount()
+	if node.Mounts.Dms3Fs != nil && node.Mounts.Dms3Fs.IsActive() {
+		node.Mounts.Dms3Fs.Unmount()
 	}
-	if node.Mounts.Ipns != nil && node.Mounts.Ipns.IsActive() {
-		node.Mounts.Ipns.Unmount()
+	if node.Mounts.Dms3Ns != nil && node.Mounts.Dms3Ns.IsActive() {
+		node.Mounts.Dms3Ns.Unmount()
 	}
 
 	if err := platformFuseChecks(node); err != nil {
@@ -48,7 +48,7 @@ func Mount(node *core.IpfsNode, fsdir, nsdir string) error {
 	return doMount(node, fsdir, nsdir)
 }
 
-func doMount(node *core.IpfsNode, fsdir, nsdir string) error {
+func doMount(node *core.Dms3FsNode, fsdir, nsdir string) error {
 	fmtFuseErr := func(err error, mountpoint string) error {
 		s := err.Error()
 		if strings.Contains(s, fuseNoDirectory) {
@@ -79,7 +79,7 @@ func doMount(node *core.IpfsNode, fsdir, nsdir string) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			nsmount, err2 = ipns.Mount(node, nsdir, fsdir)
+			nsmount, err2 = dms3ns.Mount(node, nsdir, fsdir)
 		}()
 	}
 
@@ -108,7 +108,7 @@ func doMount(node *core.IpfsNode, fsdir, nsdir string) error {
 	}
 
 	// setup node state, so that it can be cancelled
-	node.Mounts.Ipfs = fsmount
-	node.Mounts.Ipns = nsmount
+	node.Mounts.Dms3Fs = fsmount
+	node.Mounts.Dms3Ns = nsmount
 	return nil
 }

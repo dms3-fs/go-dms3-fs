@@ -8,15 +8,15 @@ import (
 	"text/tabwriter"
 	"time"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
 )
 
 var ActiveReqsCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "List commands run on this IPFS node.",
+		Tagline: "List commands run on this DMS3FS node.",
 		ShortDescription: `
 Lists running and recently run commands.
 `,

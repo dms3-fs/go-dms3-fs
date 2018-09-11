@@ -3,9 +3,9 @@ package core_test
 import (
 	"testing"
 
-	core "github.com/ipfs/go-ipfs/core"
-	coremock "github.com/ipfs/go-ipfs/core/mock"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	coremock "github.com/dms3-fs/go-dms3-fs/core/mock"
+	path "github.com/dms3-fs/go-path"
 )
 
 func TestResolveNoComponents(t *testing.T) {
@@ -14,14 +14,14 @@ func TestResolveNoComponents(t *testing.T) {
 		t.Fatal("Should have constructed a mock node", err)
 	}
 
-	_, err = core.Resolve(n.Context(), n.Namesys, n.Resolver, path.Path("/ipns/"))
+	_, err = core.Resolve(n.Context(), n.Namesys, n.Resolver, path.Path("/dms3ns/"))
 	if err != path.ErrNoComponents {
-		t.Fatal("Should error with no components (/ipns/).", err)
+		t.Fatal("Should error with no components (/dms3ns/).", err)
 	}
 
-	_, err = core.Resolve(n.Context(), n.Namesys, n.Resolver, path.Path("/ipfs/"))
+	_, err = core.Resolve(n.Context(), n.Namesys, n.Resolver, path.Path("/dms3fs/"))
 	if err != path.ErrNoComponents {
-		t.Fatal("Should error with no components (/ipfs/).", err)
+		t.Fatal("Should error with no components (/dms3fs/).", err)
 	}
 
 	_, err = core.Resolve(n.Context(), n.Namesys, n.Resolver, path.Path("/../.."))

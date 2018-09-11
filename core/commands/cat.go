@@ -6,24 +6,24 @@ import (
 	"io"
 	"os"
 
-	core "github.com/ipfs/go-ipfs/core"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	coreunix "github.com/dms3-fs/go-dms3-fs/core/coreunix"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
 )
 
 const progressBarMinSize = 1024 * 1024 * 8 // show progress bar for outputs > 8MiB
 
 var CatCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline:          "Show IPFS object data.",
-		ShortDescription: "Displays the data contained by an IPFS or IPNS object(s) at the given path.",
+		Tagline:          "Show DMS3FS object data.",
+		ShortDescription: "Displays the data contained by an DMS3FS or DMS3NS object(s) at the given path.",
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("ipfs-path", true, true, "The path to the IPFS object(s) to be outputted.").EnableStdin(),
+		cmdkit.StringArg("dms3fs-path", true, true, "The path to the DMS3FS object(s) to be outputted.").EnableStdin(),
 	},
 	Options: []cmdkit.Option{
 		cmdkit.IntOption("offset", "o", "Byte offset to begin reading from."),
@@ -134,7 +134,7 @@ var CatCmd = &cmds.Command{
 	},
 }
 
-func cat(ctx context.Context, node *core.IpfsNode, paths []string, offset int64, max int64) ([]io.Reader, uint64, error) {
+func cat(ctx context.Context, node *core.Dms3FsNode, paths []string, offset int64, max int64) ([]io.Reader, uint64, error) {
 	readers := make([]io.Reader, 0, len(paths))
 	length := uint64(0)
 	if max == 0 {

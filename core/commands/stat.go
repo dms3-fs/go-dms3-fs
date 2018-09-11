@@ -7,24 +7,24 @@ import (
 	"os"
 	"time"
 
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
 
-	humanize "gx/ipfs/QmPSBJL4momYnE7DcUyk2DVhD6rH488ZmHBGLbxNdhU44K/go-humanize"
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	protocol "gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
-	metrics "gx/ipfs/QmdhwKw53CTV8EJSAsR1bpmMT5kXiWBgeAyv1EXeeDiXqR/go-libp2p-metrics"
+	humanize "github.com/dustin/go-humanize"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	metrics "github.com/dms3-p2p/go-p2p-metrics"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	protocol "github.com/dms3-p2p/go-p2p-protocol"
 )
 
 var StatsCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Query IPFS statistics.",
-		ShortDescription: `'ipfs stats' is a set of commands to help look at statistics
-for your IPFS node.
+		Tagline: "Query DMS3FS statistics.",
+		ShortDescription: `'dms3fs stats' is a set of commands to help look at statistics
+for your DMS3FS node.
 `,
-		LongDescription: `'ipfs stats' is a set of commands to help look at statistics
-for your IPFS node.`,
+		LongDescription: `'dms3fs stats' is a set of commands to help look at statistics
+for your DMS3FS node.`,
 	},
 
 	Subcommands: map[string]*cmds.Command{
@@ -36,11 +36,11 @@ for your IPFS node.`,
 
 var statBwCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Print ipfs bandwidth information.",
-		ShortDescription: `'ipfs stats bw' prints bandwidth information for the ipfs daemon.
+		Tagline: "Print dms3fs bandwidth information.",
+		ShortDescription: `'dms3fs stats bw' prints bandwidth information for the dms3fs daemon.
 It displays: TotalIn, TotalOut, RateIn, RateOut.
 		`,
-		LongDescription: `'ipfs stats bw' prints bandwidth information for the ipfs daemon.
+		LongDescription: `'dms3fs stats bw' prints bandwidth information for the dms3fs daemon.
 It displays: TotalIn, TotalOut, RateIn, RateOut.
 
 By default, overall bandwidth and all protocols are shown. To limit bandwidth
@@ -48,22 +48,22 @@ to a particular peer, use the 'peer' option along with that peer's multihash
 id. To specify a specific protocol, use the 'proto' option. The 'peer' and
 'proto' options cannot be specified simultaneously. The protocols that are
 queried using this method are outlined in the specification:
-https://github.com/libp2p/specs/blob/master/7-properties.md#757-protocol-multicodecs
+https://github.com/dms3-p2p/specs/blob/master/7-properties.md#757-protocol-multicodecs
 
 Example protocol options:
-  - /ipfs/id/1.0.0
-  - /ipfs/bitswap
-  - /ipfs/dht
+  - /dms3fs/id/1.0.0
+  - /dms3fs/bitswap
+  - /dms3fs/dht
 
 Example:
 
-    > ipfs stats bw -t /ipfs/bitswap
+    > dms3fs stats bw -t /dms3fs/bitswap
     Bandwidth
     TotalIn: 5.0MB
     TotalOut: 0B
     RateIn: 343B/s
     RateOut: 0B/s
-    > ipfs stats bw -p QmepgFW7BHEtU4pZJdxaNiv75mKLLRQnPi1KaaXmQN4V1a
+    > dms3fs stats bw -p QmepgFW7BHEtU4pZJdxaNiv75mKLLRQnPi1KaaXmQN4V1a
     Bandwidth
     TotalIn: 4.9MB
     TotalOut: 12MB

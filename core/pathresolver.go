@@ -5,26 +5,26 @@ import (
 	"errors"
 	"strings"
 
-	namesys "github.com/ipfs/go-ipfs/namesys"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
-	resolver "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
+	namesys "github.com/dms3-fs/go-dms3-fs/namesys"
+	path "github.com/dms3-fs/go-path"
+	resolver "github.com/dms3-fs/go-path/resolver"
 
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	logging "github.com/dms3-fs/go-log"
 )
 
-// ErrNoNamesys is an explicit error for when an IPFS node doesn't
+// ErrNoNamesys is an explicit error for when an DMS3FS node doesn't
 // (yet) have a name system
 var ErrNoNamesys = errors.New(
-	"core/resolve: no Namesys on IpfsNode - can't resolve ipns entry")
+	"core/resolve: no Namesys on Dms3FsNode - can't resolve dms3ns entry")
 
-// ResolveIPNS resolves /ipns paths
-func ResolveIPNS(ctx context.Context, nsys namesys.NameSystem, p path.Path) (path.Path, error) {
-	if strings.HasPrefix(p.String(), "/ipns/") {
-		evt := log.EventBegin(ctx, "resolveIpnsPath")
+// ResolveDMS3NS resolves /dms3ns paths
+func ResolveDMS3NS(ctx context.Context, nsys namesys.NameSystem, p path.Path) (path.Path, error) {
+	if strings.HasPrefix(p.String(), "/dms3ns/") {
+		evt := log.EventBegin(ctx, "resolveDms3NsPath")
 		defer evt.Done()
-		// resolve ipns paths
+		// resolve dms3ns paths
 
 		// TODO(cryptix): we should be able to query the local cache for the path
 		if nsys == nil {
@@ -63,27 +63,27 @@ func ResolveIPNS(ctx context.Context, nsys namesys.NameSystem, p path.Path) (pat
 }
 
 // Resolve resolves the given path by parsing out protocol-specific
-// entries (e.g. /ipns/<node-key>) and then going through the /ipfs/
+// entries (e.g. /dms3ns/<node-key>) and then going through the /dms3fs/
 // entries and returning the final node.
-func Resolve(ctx context.Context, nsys namesys.NameSystem, r *resolver.Resolver, p path.Path) (ipld.Node, error) {
-	p, err := ResolveIPNS(ctx, nsys, p)
+func Resolve(ctx context.Context, nsys namesys.NameSystem, r *resolver.Resolver, p path.Path) (dms3ld.Node, error) {
+	p, err := ResolveDMS3NS(ctx, nsys, p)
 	if err != nil {
 		return nil, err
 	}
 
-	// ok, we have an IPFS path now (or what we'll treat as one)
+	// ok, we have an DMS3FS path now (or what we'll treat as one)
 	return r.ResolvePath(ctx, p)
 }
 
 // ResolveToCid resolves a path to a cid.
 //
 // It first checks if the path is already in the form of just a cid (<cid> or
-// /ipfs/<cid>) and returns immediately if so. Otherwise, it falls back onto
+// /dms3fs/<cid>) and returns immediately if so. Otherwise, it falls back onto
 // Resolve to perform resolution of the dagnode being referenced.
 func ResolveToCid(ctx context.Context, nsys namesys.NameSystem, r *resolver.Resolver, p path.Path) (*cid.Cid, error) {
 
 	// If the path is simply a cid, parse and return it. Parsed paths are already
-	// normalized (read: prepended with /ipfs/ if needed), so segment[1] should
+	// normalized (read: prepended with /dms3fs/ if needed), so segment[1] should
 	// always be the key.
 	if p.IsJustAKey() {
 		return cid.Decode(p.Segments()[1])

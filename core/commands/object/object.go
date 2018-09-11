@@ -10,17 +10,17 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	oldcmds "github.com/ipfs/go-ipfs/commands"
-	lgc "github.com/ipfs/go-ipfs/commands/legacy"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	"github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
+	lgc "github.com/dms3-fs/go-dms3-fs/commands/legacy"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	"github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	dag "github.com/dms3-fs/go-merkledag"
 )
 
 // ErrObjectTooLarge is returned when too much data was read from stdin. current limit 2m
@@ -45,9 +45,9 @@ type Object struct {
 
 var ObjectCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Interact with IPFS objects.",
+		Tagline: "Interact with DMS3FS objects.",
 		ShortDescription: `
-'ipfs object' is a plumbing command used to manipulate DAG objects
+'dms3fs object' is a plumbing command used to manipulate DAG objects
 directly.`,
 	},
 
@@ -65,13 +65,13 @@ directly.`,
 
 var ObjectDataCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Output the raw bytes of an IPFS object.",
+		Tagline: "Output the raw bytes of an DMS3FS object.",
 		ShortDescription: `
-'ipfs object data' is a plumbing command for retrieving the raw bytes stored
+'dms3fs object data' is a plumbing command for retrieving the raw bytes stored
 in a DAG node. It outputs to stdout, and <key> is a base58 encoded multihash.
 `,
 		LongDescription: `
-'ipfs object data' is a plumbing command for retrieving the raw bytes stored
+'dms3fs object data' is a plumbing command for retrieving the raw bytes stored
 in a DAG node. It outputs to stdout, and <key> is a base58 encoded multihash.
 
 Note that the "--encoding" option does not affect the output, since the output
@@ -109,7 +109,7 @@ var ObjectLinksCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Output the links pointed to by the specified object.",
 		ShortDescription: `
-'ipfs object links' is a plumbing command for retrieving the links from
+'dms3fs object links' is a plumbing command for retrieving the links from
 a DAG node. It outputs to stdout, and <key> is a base58 encoded
 multihash.
 `,
@@ -200,12 +200,12 @@ var ObjectGetCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Get and serialize the DAG node named by <key>.",
 		ShortDescription: `
-'ipfs object get' is a plumbing command for retrieving DAG nodes.
+'dms3fs object get' is a plumbing command for retrieving DAG nodes.
 It serializes the DAG node to the format specified by the "--encoding"
 flag. It outputs to stdout, and <key> is a base58 encoded multihash.
 `,
 		LongDescription: `
-'ipfs object get' is a plumbing command for retrieving DAG nodes.
+'dms3fs object get' is a plumbing command for retrieving DAG nodes.
 It serializes the DAG node to the format specified by the "--encoding"
 flag. It outputs to stdout, and <key> is a base58 encoded multihash.
 
@@ -320,7 +320,7 @@ var ObjectStatCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Get stats for the DAG node named by <key>.",
 		ShortDescription: `
-'ipfs object stat' is a plumbing command to print DAG node statistics.
+'dms3fs object stat' is a plumbing command to print DAG node statistics.
 <key> is a base58 encoded multihash. It outputs to stdout:
 
 	NumLinks        int number of links in link table
@@ -353,7 +353,7 @@ var ObjectStatCmd = &oldcmds.Command{
 			return
 		}
 
-		oldStat := &ipld.NodeStat{
+		oldStat := &dms3ld.NodeStat{
 			Hash:           ns.Cid.String(),
 			NumLinks:       ns.NumLinks,
 			BlockSize:      ns.BlockSize,
@@ -364,7 +364,7 @@ var ObjectStatCmd = &oldcmds.Command{
 
 		res.SetOutput(oldStat)
 	},
-	Type: ipld.NodeStat{},
+	Type: dms3ld.NodeStat{},
 	Marshalers: oldcmds.MarshalerMap{
 		oldcmds.Text: func(res oldcmds.Response) (io.Reader, error) {
 			v, err := unwrapOutput(res.Output())
@@ -372,7 +372,7 @@ var ObjectStatCmd = &oldcmds.Command{
 				return nil, err
 			}
 
-			ns, ok := v.(*ipld.NodeStat)
+			ns, ok := v.(*dms3ld.NodeStat)
 			if !ok {
 				return nil, e.TypeErr(ns, v)
 			}
@@ -396,11 +396,11 @@ var ObjectPutCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Store input as a DAG object, print its key.",
 		ShortDescription: `
-'ipfs object put' is a plumbing command for storing DAG nodes.
+'dms3fs object put' is a plumbing command for storing DAG nodes.
 It reads from stdin, and the output is a base58 encoded multihash.
 `,
 		LongDescription: `
-'ipfs object put' is a plumbing command for storing DAG nodes.
+'dms3fs object put' is a plumbing command for storing DAG nodes.
 It reads from stdin, and the output is a base58 encoded multihash.
 
 Data should be in the format specified by the --inputenc flag.
@@ -410,7 +410,7 @@ Data should be in the format specified by the --inputenc flag.
 
 Examples:
 
-	$ echo '{ "Data": "abc" }' | ipfs object put
+	$ echo '{ "Data": "abc" }' | dms3fs object put
 
 This creates a node with the data 'abc' and no links. For an object with
 links, create a file named 'node.json' with the contents:
@@ -426,7 +426,7 @@ links, create a file named 'node.json' with the contents:
 
 And then run:
 
-	$ ipfs object put node.json
+	$ dms3fs object put node.json
 `,
 	},
 
@@ -507,12 +507,12 @@ And then run:
 
 var ObjectNewCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Create a new object from an ipfs template.",
+		Tagline: "Create a new object from an dms3fs template.",
 		ShortDescription: `
-'ipfs object new' is a plumbing command for creating new DAG nodes.
+'dms3fs object new' is a plumbing command for creating new DAG nodes.
 `,
 		LongDescription: `
-'ipfs object new' is a plumbing command for creating new DAG nodes.
+'dms3fs object new' is a plumbing command for creating new DAG nodes.
 By default it creates and returns a new empty merkledag node, but
 you may pass an optional template argument to create a preformatted
 node.
@@ -578,13 +578,13 @@ func deserializeNode(nd *Node, dataFieldEncoding string) (*dag.ProtoNode, error)
 		return nil, fmt.Errorf("unkown data field encoding")
 	}
 
-	links := make([]*ipld.Link, len(nd.Links))
+	links := make([]*dms3ld.Link, len(nd.Links))
 	for i, link := range nd.Links {
 		c, err := cid.Decode(link.Hash)
 		if err != nil {
 			return nil, err
 		}
-		links[i] = &ipld.Link{
+		links[i] = &dms3ld.Link{
 			Name: link.Name,
 			Size: link.Size,
 			Cid:  c,

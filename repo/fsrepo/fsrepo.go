@@ -11,23 +11,23 @@ import (
 	"strings"
 	"sync"
 
-	filestore "github.com/ipfs/go-ipfs/filestore"
-	keystore "github.com/ipfs/go-ipfs/keystore"
-	repo "github.com/ipfs/go-ipfs/repo"
-	"github.com/ipfs/go-ipfs/repo/common"
-	mfsr "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
-	dir "github.com/ipfs/go-ipfs/thirdparty/dir"
+	filestore "github.com/dms3-fs/go-dms3-fs/filestore"
+	keystore "github.com/dms3-fs/go-dms3-fs/keystore"
+	repo "github.com/dms3-fs/go-dms3-fs/repo"
+	"github.com/dms3-fs/go-dms3-fs/repo/common"
+	mfsr "github.com/dms3-fs/go-dms3-fs/repo/fsrepo/migrations"
+	dir "github.com/dms3-fs/go-dms3-fs/thirdparty/dir"
 
-	"github.com/ipfs/go-ipfs/Godeps/_workspace/src/github.com/mitchellh/go-homedir"
+	"github.com/dms3-fs/go-dms3-fs/Godeps/_workspace/src/github.com/mitchellh/go-homedir"
 
-	util "gx/ipfs/QmPdKqUcHGFdeSpvjVoaTRPPstGif9GBZb5Q56RVw9o69A/go-ipfs-util"
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	measure "gx/ipfs/QmRa2HJZNKkkkbNVPkZu9VCzst4B3JmxoaR97EUFhWcK6m/go-ds-measure"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	serialize "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config/serialize"
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
-	lockfile "gx/ipfs/QmZzgxSj8QpR58KmdeNj97eD66X6xeDAFNjpP2xTY9oKeQ/go-fs-lock"
+	ds "github.com/dms3-fs/go-datastore"
+	measure "github.com/dms3-fs/go-ds-measure"
+	lockfile "github.com/dms3-fs/go-fs-lock"
+	config "github.com/dms3-fs/go-fs-config"
+	serialize "github.com/dms3-fs/go-fs-config/serialize"
+	util "github.com/dms3-fs/go-fs-util"
+	logging "github.com/dms3-fs/go-log"
+	ma "github.com/dms3-mft/go-multiaddr"
 )
 
 // LockFile is the filename of the repo lock, relative to config dir
@@ -39,19 +39,19 @@ var log = logging.Logger("fsrepo")
 // version number that we are currently expecting to see
 var RepoVersion = 7
 
-var migrationInstructions = `See https://github.com/ipfs/fs-repo-migrations/blob/master/run.md
+var migrationInstructions = `See https://github.com/dms3-fs/fs-repo-migrations/blob/master/run.md
 Sorry for the inconvenience. In the future, these will run automatically.`
 
 var programTooLowMessage = `Your programs version (%d) is lower than your repos (%d).
-Please update ipfs to a version that supports the existing repo, or run
+Please update dms3fs to a version that supports the existing repo, or run
 a migration in reverse.
 
-See https://github.com/ipfs/fs-repo-migrations/blob/master/run.md for details.`
+See https://github.com/dms3-fs/fs-repo-migrations/blob/master/run.md for details.`
 
 var (
 	ErrNoVersion     = errors.New("no version file found, please run 0-to-1 migration tool.\n" + migrationInstructions)
-	ErrOldRepo       = errors.New("ipfs repo found in old '~/.go-ipfs' location, please run migration tool.\n" + migrationInstructions)
-	ErrNeedMigration = errors.New("ipfs repo needs migration")
+	ErrOldRepo       = errors.New("dms3fs repo found in old '~/.go-dms3-fs' location, please run migration tool.\n" + migrationInstructions)
+	ErrNeedMigration = errors.New("dms3fs repo needs migration")
 )
 
 type NoRepoError struct {
@@ -61,7 +61,7 @@ type NoRepoError struct {
 var _ error = NoRepoError{}
 
 func (err NoRepoError) Error() string {
-	return fmt.Sprintf("no IPFS repo found in %s.\nplease run: 'ipfs init'", err.Path)
+	return fmt.Sprintf("no DMS3FS repo found in %s.\nplease run: 'dms3fs init'", err.Path)
 }
 
 const apiFile = "api"
@@ -81,16 +81,16 @@ var (
 	// this can be removed. Right now, this makes ConfigCmd.Run
 	// function try to open the repo twice:
 	//
-	//     $ ipfs daemon &
-	//     $ ipfs config foo
+	//     $ dms3fs daemon &
+	//     $ dms3fs config foo
 	//
 	// The reason for the above is that in standalone mode without the
-	// daemon, `ipfs config` tries to save work by not building the
-	// full IpfsNode, but accessing the Repo directly.
+	// daemon, `dms3fs config` tries to save work by not building the
+	// full Dms3FsNode, but accessing the Repo directly.
 	onlyOne repo.OnlyOne
 )
 
-// FSRepo represents an IPFS FileSystem Repo. It is safe for use by multiple
+// FSRepo represents an DMS3FS FileSystem Repo. It is safe for use by multiple
 // callers.
 type FSRepo struct {
 	// has Close been called already
@@ -197,7 +197,7 @@ func newFSRepo(rpath string) (*FSRepo, error) {
 
 func checkInitialized(path string) error {
 	if !isInitializedUnsynced(path) {
-		alt := strings.Replace(path, ".ipfs", ".go-ipfs", 1)
+		alt := strings.Replace(path, ".dms3-fs", ".go-dms3-fs", 1)
 		if isInitializedUnsynced(alt) {
 			return ErrOldRepo
 		}
@@ -404,7 +404,7 @@ func (r *FSRepo) openDatastore() error {
 		return fmt.Errorf("required Datastore.Spec entry missing from config file")
 	}
 	if r.config.Datastore.NoSync {
-		log.Warning("NoSync is now deprecated in favor of datastore specific settings. If you want to disable fsync on flatfs set 'sync' to false. See https://github.com/ipfs/go-ipfs/blob/master/docs/datastores.md#flatfs.")
+		log.Warning("NoSync is now deprecated in favor of datastore specific settings. If you want to disable fsync on flatfs set 'sync' to false. See https://github.com/dms3-fs/go-dms3-fs/blob/master/docs/datastores.md#flatfs.")
 	}
 
 	dsc, err := AnyDatastoreConfig(r.config.Datastore.Spec)
@@ -429,7 +429,7 @@ func (r *FSRepo) openDatastore() error {
 	r.ds = d
 
 	// Wrap it with metrics gathering
-	prefix := "ipfs.fsrepo.datastore"
+	prefix := "dms3fs.fsrepo.datastore"
 	r.ds = measure.New(prefix, r.ds)
 
 	return nil

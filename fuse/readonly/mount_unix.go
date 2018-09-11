@@ -4,17 +4,17 @@
 package readonly
 
 import (
-	core "github.com/ipfs/go-ipfs/core"
-	mount "github.com/ipfs/go-ipfs/fuse/mount"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	mount "github.com/dms3-fs/go-dms3-fs/fuse/mount"
 )
 
-// Mount mounts IPFS at a given location, and returns a mount.Mount instance.
-func Mount(ipfs *core.IpfsNode, mountpoint string) (mount.Mount, error) {
-	cfg, err := ipfs.Repo.Config()
+// Mount mounts DMS3FS at a given location, and returns a mount.Mount instance.
+func Mount(dms3fs *core.Dms3FsNode, mountpoint string) (mount.Mount, error) {
+	cfg, err := dms3fs.Repo.Config()
 	if err != nil {
 		return nil, err
 	}
 	allow_other := cfg.Mounts.FuseAllowOther
-	fsys := NewFileSystem(ipfs)
-	return mount.NewMount(ipfs.Process(), fsys, mountpoint, allow_other)
+	fsys := NewFileSystem(dms3fs)
+	return mount.NewMount(dms3fs.Process(), fsys, mountpoint, allow_other)
 }

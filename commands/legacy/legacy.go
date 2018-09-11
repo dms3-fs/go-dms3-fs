@@ -4,9 +4,9 @@ import (
 	"io"
 	"runtime/debug"
 
-	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
+	"github.com/dms3-fs/go-fs-cmds"
 
-	oldcmds "github.com/ipfs/go-ipfs/commands"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
 )
 
 // MarshalerEncoder implements Encoder from a Marshaler

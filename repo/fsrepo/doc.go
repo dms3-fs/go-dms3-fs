@@ -2,16 +2,16 @@
 //
 // TODO explain the package roadmap...
 //
-//   .ipfs/
+//   .dms3-fs/
 //   ├── client/
 //   |   ├── client.lock          <------ protects client/ + signals its own pid
-//   │   ├── ipfs-client.cpuprof
-//   │   └── ipfs-client.memprof
+//   │   ├── dms3fs-client.cpuprof
+//   │   └── dms3fs-client.memprof
 //   ├── config
 //   ├── daemon/
 //   │   ├── daemon.lock          <------ protects daemon/ + signals its own address
-//   │   ├── ipfs-daemon.cpuprof
-//   │   └── ipfs-daemon.memprof
+//   │   ├── dms3fs-daemon.cpuprof
+//   │   └── dms3fs-daemon.memprof
 //   ├── datastore/
 //   ├── repo.lock                <------ protects datastore/ and config
 //   └── version

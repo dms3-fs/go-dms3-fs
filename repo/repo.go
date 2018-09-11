@@ -4,21 +4,21 @@ import (
 	"errors"
 	"io"
 
-	filestore "github.com/ipfs/go-ipfs/filestore"
-	keystore "github.com/ipfs/go-ipfs/keystore"
+	filestore "github.com/dms3-fs/go-dms3-fs/filestore"
+	keystore "github.com/dms3-fs/go-dms3-fs/keystore"
 
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	ds "github.com/dms3-fs/go-datastore"
+	config "github.com/dms3-fs/go-fs-config"
+	ma "github.com/dms3-mft/go-multiaddr"
 )
 
 var (
 	ErrApiNotRunning = errors.New("api not running")
 )
 
-// Repo represents all persistent data of a given ipfs node.
+// Repo represents all persistent data of a given dms3fs node.
 type Repo interface {
-	// Config returns the ipfs configuration file from the repo. Changes made
+	// Config returns the dms3fs configuration file from the repo. Changes made
 	// to the returned config are not automatically persisted.
 	Config() (*config.Config, error)
 

@@ -3,15 +3,15 @@ package commands
 import (
 	"fmt"
 
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
 )
 
 var daemonShutdownCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Shut down the ipfs daemon",
+		Tagline: "Shut down the dms3fs daemon",
 	},
 	Run: func(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) {
 		nd, err := cmdenv.GetNode(env)
@@ -26,7 +26,7 @@ var daemonShutdownCmd = &cmds.Command{
 		}
 
 		if err := nd.Process().Close(); err != nil {
-			log.Error("error while shutting down ipfs daemon:", err)
+			log.Error("error while shutting down dms3fs daemon:", err)
 		}
 	},
 }

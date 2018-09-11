@@ -9,18 +9,18 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	oldcmds "github.com/ipfs/go-ipfs/commands"
-	lgc "github.com/ipfs/go-ipfs/commands/legacy"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	corerepo "github.com/ipfs/go-ipfs/core/corerepo"
-	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
+	lgc "github.com/dms3-fs/go-dms3-fs/commands/legacy"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	corerepo "github.com/dms3-fs/go-dms3-fs/core/corerepo"
+	fsrepo "github.com/dms3-fs/go-dms3-fs/repo/fsrepo"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	bstore "gx/ipfs/QmcmpX42gtDv1fz24kau4wjS9hfwWj5VexWBKgGnWzsyag/go-ipfs-blockstore"
+	cid "github.com/dms3-fs/go-cid"
+	bstore "github.com/dms3-fs/go-fs-blockstore"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 type RepoVersion struct {
@@ -29,9 +29,9 @@ type RepoVersion struct {
 
 var RepoCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Manipulate the IPFS repo.",
+		Tagline: "Manipulate the DMS3FS repo.",
 		ShortDescription: `
-'ipfs repo' is a plumbing command used to manipulate the repo.
+'dms3fs repo' is a plumbing command used to manipulate the repo.
 `,
 	},
 
@@ -54,7 +54,7 @@ var repoGcCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Perform a garbage collection sweep on the repo.",
 		ShortDescription: `
-'ipfs repo gc' is a plumbing command that will sweep the local
+'dms3fs repo gc' is a plumbing command that will sweep the local
 set of stored objects and remove ones that are not pinned in
 order to reclaim hard disk space.
 `,
@@ -151,7 +151,7 @@ var repoStatCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Get stats for the currently used repo.",
 		ShortDescription: `
-'ipfs repo stat' provides information about the local set of
+'dms3fs repo stat' provides information about the local set of
 stored objects. It outputs:
 
 RepoSize        int Size in bytes that the repo is currently taking.
@@ -237,8 +237,8 @@ var RepoFsckCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Remove repo lockfiles.",
 		ShortDescription: `
-'ipfs repo fsck' is a plumbing command that will remove repo and level db
-lockfiles, as well as the api file. This command can only run when no ipfs
+'dms3fs repo fsck' is a plumbing command that will remove repo and level db
+lockfiles, as well as the api file. This command can only run when no dms3fs
 daemons are running.
 `,
 	},
@@ -381,7 +381,7 @@ var repoVersionCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Show the repo version.",
 		ShortDescription: `
-'ipfs repo version' returns the current repo version.
+'dms3fs repo version' returns the current repo version.
 `,
 	},
 
@@ -414,7 +414,7 @@ var repoVersionCmd = &oldcmds.Command{
 			if quiet {
 				buf = bytes.NewBufferString(fmt.Sprintf("fs-repo@%s\n", response.Version))
 			} else {
-				buf = bytes.NewBufferString(fmt.Sprintf("ipfs repo version fs-repo@%s\n", response.Version))
+				buf = bytes.NewBufferString(fmt.Sprintf("dms3fs repo version fs-repo@%s\n", response.Version))
 			}
 			return buf, nil
 

@@ -11,15 +11,15 @@ import (
 	"io"
 	"io/ioutil"
 
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	caopts "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
-	"github.com/ipfs/go-ipfs/dagutils"
-	"github.com/ipfs/go-ipfs/pin"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	caopts "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
+	"github.com/dms3-fs/go-dms3-fs/dagutils"
+	"github.com/dms3-fs/go-dms3-fs/pin"
 
-	ft "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	dag "github.com/dms3-fs/go-merkledag"
+	ft "github.com/dms3-fs/go-unixfs"
 )
 
 const inputLimit = 2 << 20
@@ -36,13 +36,13 @@ type Node struct {
 	Data  string
 }
 
-func (api *ObjectAPI) New(ctx context.Context, opts ...caopts.ObjectNewOption) (ipld.Node, error) {
+func (api *ObjectAPI) New(ctx context.Context, opts ...caopts.ObjectNewOption) (dms3ld.Node, error) {
 	options, err := caopts.ObjectNewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	var n ipld.Node
+	var n dms3ld.Node
 	switch options.Type {
 	case "empty":
 		n = new(dag.ProtoNode)
@@ -134,10 +134,10 @@ func (api *ObjectAPI) Put(ctx context.Context, src io.Reader, opts ...caopts.Obj
 		}
 	}
 
-	return coreiface.IpfsPath(dagnode.Cid()), nil
+	return coreiface.Dms3FsPath(dagnode.Cid()), nil
 }
 
-func (api *ObjectAPI) Get(ctx context.Context, path coreiface.Path) (ipld.Node, error) {
+func (api *ObjectAPI) Get(ctx context.Context, path coreiface.Path) (dms3ld.Node, error) {
 	return api.core().ResolveNode(ctx, path)
 }
 
@@ -155,16 +155,16 @@ func (api *ObjectAPI) Data(ctx context.Context, path coreiface.Path) (io.Reader,
 	return bytes.NewReader(pbnd.Data()), nil
 }
 
-func (api *ObjectAPI) Links(ctx context.Context, path coreiface.Path) ([]*ipld.Link, error) {
+func (api *ObjectAPI) Links(ctx context.Context, path coreiface.Path) ([]*dms3ld.Link, error) {
 	nd, err := api.core().ResolveNode(ctx, path)
 	if err != nil {
 		return nil, err
 	}
 
 	links := nd.Links()
-	out := make([]*ipld.Link, len(links))
+	out := make([]*dms3ld.Link, len(links))
 	for n, l := range links {
-		out[n] = (*ipld.Link)(l)
+		out[n] = (*dms3ld.Link)(l)
 	}
 
 	return out, nil
@@ -231,7 +231,7 @@ func (api *ObjectAPI) AddLink(ctx context.Context, base coreiface.Path, name str
 		return nil, err
 	}
 
-	return coreiface.IpfsPath(nnode.Cid()), nil
+	return coreiface.Dms3FsPath(nnode.Cid()), nil
 }
 
 func (api *ObjectAPI) RmLink(ctx context.Context, base coreiface.Path, link string) (coreiface.ResolvedPath, error) {
@@ -257,7 +257,7 @@ func (api *ObjectAPI) RmLink(ctx context.Context, base coreiface.Path, link stri
 		return nil, err
 	}
 
-	return coreiface.IpfsPath(nnode.Cid()), nil
+	return coreiface.Dms3FsPath(nnode.Cid()), nil
 }
 
 func (api *ObjectAPI) AppendData(ctx context.Context, path coreiface.Path, r io.Reader) (coreiface.ResolvedPath, error) {
@@ -294,7 +294,7 @@ func (api *ObjectAPI) patchData(ctx context.Context, path coreiface.Path, r io.R
 		return nil, err
 	}
 
-	return coreiface.IpfsPath(pbnd.Cid()), nil
+	return coreiface.Dms3FsPath(pbnd.Cid()), nil
 }
 
 func (api *ObjectAPI) Diff(ctx context.Context, before coreiface.Path, after coreiface.Path) ([]coreiface.ObjectChange, error) {
@@ -321,11 +321,11 @@ func (api *ObjectAPI) Diff(ctx context.Context, before coreiface.Path, after cor
 		}
 
 		if change.Before != nil {
-			out[i].Before = coreiface.IpfsPath(change.Before)
+			out[i].Before = coreiface.Dms3FsPath(change.Before)
 		}
 
 		if change.After != nil {
-			out[i].After = coreiface.IpfsPath(change.After)
+			out[i].After = coreiface.Dms3FsPath(change.After)
 		}
 	}
 
@@ -351,13 +351,13 @@ func deserializeNode(nd *Node, dataFieldEncoding string) (*dag.ProtoNode, error)
 		return nil, fmt.Errorf("unkown data field encoding")
 	}
 
-	links := make([]*ipld.Link, len(nd.Links))
+	links := make([]*dms3ld.Link, len(nd.Links))
 	for i, link := range nd.Links {
 		c, err := cid.Decode(link.Hash)
 		if err != nil {
 			return nil, err
 		}
-		links[i] = &ipld.Link{
+		links[i] = &dms3ld.Link{
 			Name: link.Name,
 			Size: link.Size,
 			Cid:  c,

@@ -4,14 +4,14 @@ import (
 	"net"
 	"net/http"
 
-	core "github.com/ipfs/go-ipfs/core"
+	core "github.com/dms3-fs/go-dms3-fs/core"
 
-	prometheus "gx/ipfs/QmYYv3QFnfQbiwmi1tpkgKF8o4xFnZoBrvpupTiGJwL9nH/client_golang/prometheus"
+	prometheus "github.com/gxed/client_golang/prometheus"
 )
 
 // This adds the scraping endpoint which Prometheus uses to fetch metrics.
 func MetricsScrapingOption(path string) ServeOption {
-	return func(n *core.IpfsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
+	return func(n *core.Dms3FsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
 		mux.Handle(path, prometheus.UninstrumentedHandler())
 		return mux, nil
 	}
@@ -19,7 +19,7 @@ func MetricsScrapingOption(path string) ServeOption {
 
 // This adds collection of net/http-related metrics
 func MetricsCollectionOption(handlerName string) ServeOption {
-	return func(_ *core.IpfsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
+	return func(_ *core.Dms3FsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
 		childMux := http.NewServeMux()
 		mux.HandleFunc("/", prometheus.InstrumentHandler(handlerName, childMux))
 		return childMux, nil
@@ -28,19 +28,19 @@ func MetricsCollectionOption(handlerName string) ServeOption {
 
 var (
 	peersTotalMetric = prometheus.NewDesc(
-		prometheus.BuildFQName("ipfs", "p2p", "peers_total"),
+		prometheus.BuildFQName("dms3fs", "p2p", "peers_total"),
 		"Number of connected peers", []string{"transport"}, nil)
 )
 
-type IpfsNodeCollector struct {
-	Node *core.IpfsNode
+type Dms3FsNodeCollector struct {
+	Node *core.Dms3FsNode
 }
 
-func (_ IpfsNodeCollector) Describe(ch chan<- *prometheus.Desc) {
+func (_ Dms3FsNodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- peersTotalMetric
 }
 
-func (c IpfsNodeCollector) Collect(ch chan<- prometheus.Metric) {
+func (c Dms3FsNodeCollector) Collect(ch chan<- prometheus.Metric) {
 	for tr, val := range c.PeersTotalValues() {
 		ch <- prometheus.MustNewConstMetric(
 			peersTotalMetric,
@@ -51,7 +51,7 @@ func (c IpfsNodeCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (c IpfsNodeCollector) PeersTotalValues() map[string]float64 {
+func (c Dms3FsNodeCollector) PeersTotalValues() map[string]float64 {
 	vals := make(map[string]float64)
 	if c.Node.PeerHost == nil {
 		return vals

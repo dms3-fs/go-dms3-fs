@@ -5,14 +5,14 @@ import (
 	"io/ioutil"
 	"math"
 
-	"gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
+	"github.com/dms3-fs/go-merkledag"
 
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
-func dagpbJSONParser(r io.Reader, mhType uint64, mhLen int) ([]ipld.Node, error) {
+func dagpbJSONParser(r io.Reader, mhType uint64, mhLen int) ([]dms3ld.Node, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
@@ -27,10 +27,10 @@ func dagpbJSONParser(r io.Reader, mhType uint64, mhLen int) ([]ipld.Node, error)
 
 	nd.SetCidBuilder(cidPrefix(mhType, mhLen))
 
-	return []ipld.Node{nd}, nil
+	return []dms3ld.Node{nd}, nil
 }
 
-func dagpbRawParser(r io.Reader, mhType uint64, mhLen int) ([]ipld.Node, error) {
+func dagpbRawParser(r io.Reader, mhType uint64, mhLen int) ([]dms3ld.Node, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func dagpbRawParser(r io.Reader, mhType uint64, mhLen int) ([]ipld.Node, error) 
 
 	nd.SetCidBuilder(cidPrefix(mhType, mhLen))
 
-	return []ipld.Node{nd}, nil
+	return []dms3ld.Node{nd}, nil
 }
 
 func cidPrefix(mhType uint64, mhLen int) *cid.Prefix {

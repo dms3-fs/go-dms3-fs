@@ -8,13 +8,13 @@ import (
 	"io"
 	"io/ioutil"
 
-	util "github.com/ipfs/go-ipfs/blocks/blockstoreutil"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	caopts "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	util "github.com/dms3-fs/go-dms3-fs/blocks/blockstoreutil"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	caopts "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	blocks "gx/ipfs/QmWAzSEoqZ6xU6pu8yL8e5WaMb7wtbfbhhN4p1DknUPtr3/go-block-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	blocks "github.com/dms3-fs/go-block-format"
+	cid "github.com/dms3-fs/go-cid"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
 type BlockAPI CoreAPI
@@ -65,7 +65,7 @@ func (api *BlockAPI) Put(ctx context.Context, src io.Reader, opts ...caopts.Bloc
 		return nil, err
 	}
 
-	return coreiface.IpldPath(b.Cid()), nil
+	return coreiface.Dms3LdPath(b.Cid()), nil
 }
 
 func (api *BlockAPI) Get(ctx context.Context, p coreiface.Path) (io.Reader, error) {
@@ -132,7 +132,7 @@ func (api *BlockAPI) Stat(ctx context.Context, p coreiface.Path) (coreiface.Bloc
 	}
 
 	return &BlockStat{
-		path: coreiface.IpldPath(b.Cid()),
+		path: coreiface.Dms3LdPath(b.Cid()),
 		size: len(b.RawData()),
 	}, nil
 }

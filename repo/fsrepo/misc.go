@@ -3,22 +3,22 @@ package fsrepo
 import (
 	"os"
 
-	homedir "github.com/ipfs/go-ipfs/Godeps/_workspace/src/github.com/mitchellh/go-homedir"
+	homedir "github.com/dms3-fs/go-dms3-fs/Godeps/_workspace/src/github.com/mitchellh/go-homedir"
 
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 // BestKnownPath returns the best known fsrepo path. If the ENV override is
 // present, this function returns that value. Otherwise, it returns the default
 // repo path.
 func BestKnownPath() (string, error) {
-	ipfsPath := config.DefaultPathRoot
+	dms3fsPath := config.DefaultPathRoot
 	if os.Getenv(config.EnvDir) != "" {
-		ipfsPath = os.Getenv(config.EnvDir)
+		dms3fsPath = os.Getenv(config.EnvDir)
 	}
-	ipfsPath, err := homedir.Expand(ipfsPath)
+	dms3fsPath, err := homedir.Expand(dms3fsPath)
 	if err != nil {
 		return "", err
 	}
-	return ipfsPath, nil
+	return dms3fsPath, nil
 }

@@ -8,14 +8,14 @@ import (
 	"math"
 	"testing"
 
-	"github.com/ipfs/go-ipfs/core"
-	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
-	mock "github.com/ipfs/go-ipfs/core/mock"
-	"github.com/ipfs/go-ipfs/thirdparty/unit"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	coreunix "github.com/dms3-fs/go-dms3-fs/core/coreunix"
+	mock "github.com/dms3-fs/go-dms3-fs/core/mock"
+	"github.com/dms3-fs/go-dms3-fs/thirdparty/unit"
 
-	mocknet "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/net/mock"
-	testutil "gx/ipfs/QmRNhSdqzMcuRxX9A1egBeQ3BhDTguDV5HPwi8wRykkPU8/go-testutil"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	mocknet "github.com/dms3-p2p/go-p2p/p2p/net/mock"
+	testutil "github.com/dms3-p2p/go-testutil"
 )
 
 func BenchmarkCat1MB(b *testing.B) { benchmarkVarCat(b, unit.MB*1) }

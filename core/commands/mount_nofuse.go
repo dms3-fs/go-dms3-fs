@@ -3,21 +3,21 @@
 package commands
 
 import (
-	cmds "github.com/ipfs/go-ipfs/commands"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
 )
 
 var MountCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Mounts ipfs to the filesystem (disabled).",
+		Tagline: "Mounts dms3fs to the filesystem (disabled).",
 		ShortDescription: `
-This version of ipfs is compiled without fuse support, which is required
+This version of dms3fs is compiled without fuse support, which is required
 for mounting. If you'd like to be able to mount, please use a version of
-ipfs compiled with fuse.
+dms3fs compiled with fuse.
 
 For the latest instructions, please check the project's repository:
-  http://github.com/ipfs/go-ipfs
+  http://github.com/dms3-fs/go-dms3-fs
 `,
 	},
 }

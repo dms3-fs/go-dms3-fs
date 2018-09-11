@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
 
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	lwriter "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log/writer"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	logging "github.com/dms3-fs/go-log"
+	lwriter "github.com/dms3-fs/go-log/writer"
 )
 
 // Golang os.Args overrides * and replaces the character argument with
@@ -21,7 +21,7 @@ var LogCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Interact with the daemon log output.",
 		ShortDescription: `
-'ipfs log' contains utility commands to affect or read the logging
+'dms3fs log' contains utility commands to affect or read the logging
 output of a running daemon.
 `,
 	},
@@ -78,7 +78,7 @@ var logLsCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List the logging subsystems.",
 		ShortDescription: `
-'ipfs log ls' is a utility command used to list the logging
+'dms3fs log ls' is a utility command used to list the logging
 subsystems of a running daemon.
 `,
 	},

@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	ipath "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	ipath "github.com/dms3-fs/go-path"
 
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	opt "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 )
 
 var rnd = rand.New(rand.NewSource(0x62796532303137))
@@ -84,7 +84,7 @@ func TestBasicPublishResolveKey(t *testing.T) {
 		return
 	}
 
-	if ipath.Join([]string{"/ipns", e.Name()}) != k.Path().String() {
+	if ipath.Join([]string{"/dms3ns", e.Name()}) != k.Path().String() {
 		t.Errorf("expected e.Name to equal '%s', got '%s'", e.Name(), k.Path().String())
 	}
 

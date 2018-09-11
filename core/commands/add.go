@@ -7,24 +7,24 @@ import (
 	"os"
 	"strings"
 
-	core "github.com/ipfs/go-ipfs/core"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	"github.com/ipfs/go-ipfs/core/coreunix"
-	filestore "github.com/ipfs/go-ipfs/filestore"
-	ft "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	dagtest "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag/test"
-	blockservice "gx/ipfs/QmbSB9Uh3wVgmiCb1fAb8zuC3qAE6un4kd1jvatUurfAmB/go-blockservice"
+	blockservice "github.com/dms3-fs/go-blockservice"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	"github.com/dms3-fs/go-dms3-fs/core/coreunix"
+	filestore "github.com/dms3-fs/go-dms3-fs/filestore"
+	dag "github.com/dms3-fs/go-merkledag"
+	dagtest "github.com/dms3-fs/go-merkledag/test"
+	ft "github.com/dms3-fs/go-unixfs"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	pb "gx/ipfs/QmPtj12fdwuAqj9sBSTNUxBNu8kCGNp8b3o8yUzMm5GHpq/pb"
-	cidutil "gx/ipfs/QmPyxJ2QS7L5FhGkNYkNcXHGjDhvGHueJ4auqAstFHYxy5/go-cidutil"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	files "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit/files"
-	offline "gx/ipfs/QmZxjqR9Qgompju73kakSoUj3rbVndAzky3oCDiBNCxPs1/go-ipfs-exchange-offline"
-	bstore "gx/ipfs/QmcmpX42gtDv1fz24kau4wjS9hfwWj5VexWBKgGnWzsyag/go-ipfs-blockstore"
-	mfs "gx/ipfs/QmdghKsSDa2AD1kC4qYRnVYWqZecdSBRZjeXRdhMYYhafj/go-mfs"
+	pb "github.com/cheggaaa/pb"
+	cidutil "github.com/dms3-fs/go-cidutil"
+	bstore "github.com/dms3-fs/go-fs-blockstore"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	files "github.com/dms3-fs/go-fs-cmdkit/files"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	offline "github.com/dms3-fs/go-fs-exchange-offline"
+	mfs "github.com/dms3-fs/go-mfs"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
 // ErrDepthLimitExceeded indicates that the max depth has been exceeded.
@@ -54,13 +54,13 @@ const adderOutChanSize = 8
 
 var AddCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Add a file or directory to ipfs.",
+		Tagline: "Add a file or directory to dms3fs.",
 		ShortDescription: `
-Adds contents of <path> to ipfs. Use -r to add directories (recursively).
+Adds contents of <path> to dms3fs. Use -r to add directories (recursively).
 `,
 		LongDescription: `
-Adds contents of <path> to ipfs. Use -r to add directories.
-Note that directories are added recursively, to form the ipfs
+Adds contents of <path> to dms3fs. Use -r to add directories.
+Note that directories are added recursively, to form the dms3fs
 MerkleDAG.
 
 The wrap option, '-w', wraps the file (or files, if using the
@@ -68,15 +68,15 @@ recursive option) in a directory. This directory contains only
 the files which have been added, and means that the file retains
 its filename. For example:
 
-  > ipfs add example.jpg
+  > dms3fs add example.jpg
   added QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH example.jpg
-  > ipfs add example.jpg -w
+  > dms3fs add example.jpg -w
   added QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH example.jpg
   added QmaG4FuMqEBnQNn3C8XJ5bpW8kLs7zq2ZXgHptJHbKDDVx
 
 You can now refer to the added file in a gateway, like so:
 
-  /ipfs/QmaG4FuMqEBnQNn3C8XJ5bpW8kLs7zq2ZXgHptJHbKDDVx/example.jpg
+  /dms3fs/QmaG4FuMqEBnQNn3C8XJ5bpW8kLs7zq2ZXgHptJHbKDDVx/example.jpg
 
 The chunker option, '-s', specifies the chunking strategy that dictates
 how to break files into blocks. Blocks with same content can
@@ -87,17 +87,17 @@ rabin-[min]-[avg]-[max] (where min/avg/max refer to the resulting
 chunk sizes). Using other chunking strategies will produce
 different hashes for the same file.
 
-  > ipfs add --chunker=size-2048 ipfs-logo.svg
-  added QmafrLBfzRLV4XSH1XcaMMeaXEUhDJjmtDfsYU95TrWG87 ipfs-logo.svg
-  > ipfs add --chunker=rabin-512-1024-2048 ipfs-logo.svg
-  added Qmf1hDN65tR55Ubh2RN1FPxr69xq3giVBz1KApsresY8Gn ipfs-logo.svg
+  > dms3fs add --chunker=size-2048 dms3fs-logo.svg
+  added QmafrLBfzRLV4XSH1XcaMMeaXEUhDJjmtDfsYU95TrWG87 dms3fs-logo.svg
+  > dms3fs add --chunker=rabin-512-1024-2048 dms3fs-logo.svg
+  added Qmf1hDN65tR55Ubh2RN1FPxr69xq3giVBz1KApsresY8Gn dms3fs-logo.svg
 
 You can now check what blocks have been created by:
 
-  > ipfs object links QmafrLBfzRLV4XSH1XcaMMeaXEUhDJjmtDfsYU95TrWG87
+  > dms3fs object links QmafrLBfzRLV4XSH1XcaMMeaXEUhDJjmtDfsYU95TrWG87
   QmY6yj1GsermExDXoosVE3aSPxdMNYr6aKuw3nA8LoWPRS 2059
   Qmf7ZQeSxq2fJVJbCmgTrLLVN9tDR9Wy5k75DxQKuz5Gyt 1195
-  > ipfs object links Qmf1hDN65tR55Ubh2RN1FPxr69xq3giVBz1KApsresY8Gn
+  > dms3fs object links Qmf1hDN65tR55Ubh2RN1FPxr69xq3giVBz1KApsresY8Gn
   QmY6yj1GsermExDXoosVE3aSPxdMNYr6aKuw3nA8LoWPRS 2059
   QmerURi9k4XzKCaaPbsK6BL5pMEjF7PGphjDvkkjDtsVf3 868
   QmQB28iwSriSUSMqG2nXDTLtdPHgWb4rebBrU7Q1j4vxPv 338
@@ -105,7 +105,7 @@ You can now check what blocks have been created by:
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.FileArg("path", true, true, "The path to a file to be added to ipfs.").EnableRecursive().EnableStdin(),
+		cmdkit.FileArg("path", true, true, "The path to a file to be added to dms3fs.").EnableRecursive().EnableStdin(),
 	},
 	Options: []cmdkit.Option{
 		cmds.OptionRecursivePath, // a builtin option that allows recursive paths (-r, --recursive)
@@ -138,7 +138,7 @@ You can now check what blocks have been created by:
 			return nil
 		}
 
-		// ipfs cli progress bar defaults to true unless quiet or silent is used
+		// dms3fs cli progress bar defaults to true unless quiet or silent is used
 		_, found := req.Options[progressOptionName].(bool)
 		if !found {
 			req.Options[progressOptionName] = true

@@ -6,21 +6,21 @@ import (
 	"io"
 	"text/tabwriter"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	core "github.com/ipfs/go-ipfs/core"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	unixfs "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	unixfspb "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/pb"
-	merkledag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	blockservice "gx/ipfs/QmbSB9Uh3wVgmiCb1fAb8zuC3qAE6un4kd1jvatUurfAmB/go-blockservice"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
-	resolver "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
+	blockservice "github.com/dms3-fs/go-blockservice"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	merkledag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
+	resolver "github.com/dms3-fs/go-path/resolver"
+	unixfs "github.com/dms3-fs/go-unixfs"
+	uio "github.com/dms3-fs/go-unixfs/io"
+	unixfspb "github.com/dms3-fs/go-unixfs/pb"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	offline "gx/ipfs/QmZxjqR9Qgompju73kakSoUj3rbVndAzky3oCDiBNCxPs1/go-ipfs-exchange-offline"
+	cid "github.com/dms3-fs/go-cid"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	offline "github.com/dms3-fs/go-fs-exchange-offline"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 type LsLink struct {
@@ -42,7 +42,7 @@ var LsCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List directory contents for Unix filesystem objects.",
 		ShortDescription: `
-Displays the contents of an IPFS or IPNS object(s) at the given path, with
+Displays the contents of an DMS3FS or DMS3NS object(s) at the given path, with
 the following format:
 
   <link base58 hash> <link size in bytes> <link name>
@@ -52,7 +52,7 @@ The JSON output contains type information.
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("ipfs-path", true, true, "The path to the IPFS object(s) to list links from.").EnableStdin(),
+		cmdkit.StringArg("dms3fs-path", true, true, "The path to the DMS3FS object(s) to list links from.").EnableStdin(),
 	},
 	Options: []cmdkit.Option{
 		cmdkit.BoolOption("headers", "v", "Print table headers (Hash, Size, Name)."),
@@ -86,7 +86,7 @@ The JSON output contains type information.
 
 		paths := req.Arguments()
 
-		var dagnodes []ipld.Node
+		var dagnodes []dms3ld.Node
 		for _, fpath := range paths {
 			p, err := path.ParsePath(fpath)
 			if err != nil {
@@ -116,7 +116,7 @@ The JSON output contains type information.
 				return
 			}
 
-			var links []*ipld.Link
+			var links []*dms3ld.Link
 			if dir == nil {
 				links = dagnode.Links()
 			} else {
@@ -141,7 +141,7 @@ The JSON output contains type information.
 					t = unixfspb.Data_File
 				case cid.DagProtobuf:
 					linkNode, err := link.GetNode(req.Context(), dserv)
-					if err == ipld.ErrNotFound && !resolve {
+					if err == dms3ld.ErrNotFound && !resolve {
 						// not an error
 						linkNode = nil
 					} else if err != nil {

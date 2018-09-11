@@ -4,9 +4,9 @@ IFS=$'\n\t'
 
 auth=""
 #auth="-u kubuxu:$GH_TOKEN"
-org=ipfs
-repo=go-ipfs
-arch_repo=go-ipfs-archived
+org=dms3-fs
+repo=go-dms3-fs
+arch_repo=go-dms3fs-archived
 api_repo="repos/$org/$repo"
 
 exclusions=(
@@ -29,8 +29,8 @@ gh_api() {
 }
 
 pr_branches() {
-	gh_api "$api_repo/pulls" |  jq -r '.[].head.label | select(test("^ipfs:"))' \
-		| sed 's/^ipfs://'
+	gh_api "$api_repo/pulls" |  jq -r '.[].head.label | select(test("^dms3fs:"))' \
+		| sed 's/^dms3fs://'
 }
 
 origin_refs() {
@@ -68,4 +68,3 @@ while read -r ref; do
 		git push archived "origin/$ref:refs/heads/$ref/$(date --rfc-3339=date)"
 		git push origin --delete "$ref"
 	done
-

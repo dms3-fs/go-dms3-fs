@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	opts "github.com/ipfs/go-ipfs/namesys/opts"
-	isd "gx/ipfs/QmZmmuAXgX73UQmX1jRKjTGmjzq24Jinqkq8vzkBtno4uX/go-is-domain"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	opts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
+	path "github.com/dms3-fs/go-path"
+	isd "github.com/jbenet/go-is-domain"
 )
 
 type LookupTXTFunc func(name string) (txt []string, err error)
@@ -28,7 +28,7 @@ func NewDNSResolver() *DNSResolver {
 
 // Resolve implements Resolver.
 func (r *DNSResolver) Resolve(ctx context.Context, name string, options ...opts.ResolveOpt) (path.Path, error) {
-	return resolve(ctx, r, name, opts.ProcessOpts(options), "/ipns/")
+	return resolve(ctx, r, name, opts.ProcessOpts(options), "/dms3ns/")
 }
 
 type lookupRes struct {
@@ -104,7 +104,7 @@ func workDomain(r *DNSResolver, name string, res chan lookupRes) {
 }
 
 func parseEntry(txt string) (path.Path, error) {
-	p, err := path.ParseCidToPath(txt) // bare IPFS multihashes
+	p, err := path.ParseCidToPath(txt) // bare DMS3FS multihashes
 	if err == nil {
 		return p, nil
 	}

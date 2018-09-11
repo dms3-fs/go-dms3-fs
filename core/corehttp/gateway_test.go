@@ -11,24 +11,24 @@ import (
 	"testing"
 	"time"
 
-	version "github.com/ipfs/go-ipfs"
-	core "github.com/ipfs/go-ipfs/core"
-	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
-	namesys "github.com/ipfs/go-ipfs/namesys"
-	nsopts "github.com/ipfs/go-ipfs/namesys/opts"
-	repo "github.com/ipfs/go-ipfs/repo"
+	version "github.com/dms3-fs/go-dms3-fs"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	coreunix "github.com/dms3-fs/go-dms3-fs/core/coreunix"
+	namesys "github.com/dms3-fs/go-dms3-fs/namesys"
+	nsopts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
+	repo "github.com/dms3-fs/go-dms3-fs/repo"
 
-	ci "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	id "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/protocol/identify"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	datastore "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	syncds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/sync"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	datastore "github.com/dms3-fs/go-datastore"
+	syncds "github.com/dms3-fs/go-datastore/sync"
+	config "github.com/dms3-fs/go-fs-config"
+	dag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
+	ci "github.com/dms3-p2p/go-p2p-crypto"
+	id "github.com/dms3-p2p/go-p2p/p2p/protocol/identify"
 )
 
-// `ipfs object new unixfs-dir`
-var emptyDir = "/ipfs/QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn"
+// `dms3fs object new unixfs-dir`
+var emptyDir = "/dms3fs/QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn"
 
 type mockNamesys map[string]path.Path
 
@@ -41,7 +41,7 @@ func (m mockNamesys) Resolve(ctx context.Context, name string, opts ...nsopts.Re
 	if depth == nsopts.UnlimitedDepth {
 		depth = math.MaxUint64
 	}
-	for strings.HasPrefix(name, "/ipns/") {
+	for strings.HasPrefix(name, "/dms3ns/") {
 		if depth <= 0 {
 			return value, namesys.ErrResolveRecursion
 		}
@@ -69,7 +69,7 @@ func (m mockNamesys) GetResolver(subs string) (namesys.Resolver, bool) {
 	return nil, false
 }
 
-func newNodeWithMockNamesys(ns mockNamesys) (*core.IpfsNode, error) {
+func newNodeWithMockNamesys(ns mockNamesys) (*core.Dms3FsNode, error) {
 	c := config.Config{
 		Identity: config.Identity{
 			PeerID: "QmTFauExutTsy4XP6JbMFcw2Wa9645HJt2bTqL6qYDCKfe", // required by offline node
@@ -109,7 +109,7 @@ func doWithoutRedirect(req *http.Request) (*http.Response, error) {
 	return res, nil
 }
 
-func newTestServerAndNode(t *testing.T, ns mockNamesys) (*httptest.Server, *core.IpfsNode) {
+func newTestServerAndNode(t *testing.T, ns mockNamesys) (*httptest.Server, *core.Dms3FsNode) {
 	n, err := newNodeWithMockNamesys(ns)
 	if err != nil {
 		t.Fatal(err)
@@ -129,8 +129,8 @@ func newTestServerAndNode(t *testing.T, ns mockNamesys) (*httptest.Server, *core
 	dh.Handler, err = makeHandler(n,
 		ts.Listener,
 		VersionOption(),
-		IPNSHostnameOption(),
-		GatewayOption(false, "/ipfs", "/ipns"),
+		DMS3NSHostnameOption(),
+		GatewayOption(false, "/dms3fs", "/dms3ns"),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -148,11 +148,11 @@ func TestGatewayGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ns["/ipns/example.com"] = path.FromString("/ipfs/" + k)
-	ns["/ipns/working.example.com"] = path.FromString("/ipfs/" + k)
-	ns["/ipns/double.example.com"] = path.FromString("/ipns/working.example.com")
-	ns["/ipns/triple.example.com"] = path.FromString("/ipns/double.example.com")
-	ns["/ipns/broken.example.com"] = path.FromString("/ipns/" + k)
+	ns["/dms3ns/example.com"] = path.FromString("/dms3fs/" + k)
+	ns["/dms3ns/working.example.com"] = path.FromString("/dms3fs/" + k)
+	ns["/dms3ns/double.example.com"] = path.FromString("/dms3ns/working.example.com")
+	ns["/dms3ns/triple.example.com"] = path.FromString("/dms3ns/double.example.com")
+	ns["/dms3ns/broken.example.com"] = path.FromString("/dms3ns/" + k)
 
 	t.Log(ts.URL)
 	for _, test := range []struct {
@@ -163,18 +163,18 @@ func TestGatewayGet(t *testing.T) {
 	}{
 		{"localhost:5001", "/", http.StatusNotFound, "404 page not found\n"},
 		{"localhost:5001", "/" + k, http.StatusNotFound, "404 page not found\n"},
-		{"localhost:5001", "/ipfs/" + k, http.StatusOK, "fnord"},
-		{"localhost:5001", "/ipns/nxdomain.example.com", http.StatusNotFound, "ipfs resolve -r /ipns/nxdomain.example.com: " + namesys.ErrResolveFailed.Error() + "\n"},
-		{"localhost:5001", "/ipns/%0D%0A%0D%0Ahello", http.StatusNotFound, "ipfs resolve -r /ipns/%0D%0A%0D%0Ahello: " + namesys.ErrResolveFailed.Error() + "\n"},
-		{"localhost:5001", "/ipns/example.com", http.StatusOK, "fnord"},
+		{"localhost:5001", "/dms3fs/" + k, http.StatusOK, "fnord"},
+		{"localhost:5001", "/dms3ns/nxdomain.example.com", http.StatusNotFound, "dms3fs resolve -r /dms3ns/nxdomain.example.com: " + namesys.ErrResolveFailed.Error() + "\n"},
+		{"localhost:5001", "/dms3ns/%0D%0A%0D%0Ahello", http.StatusNotFound, "dms3fs resolve -r /dms3ns/%0D%0A%0D%0Ahello: " + namesys.ErrResolveFailed.Error() + "\n"},
+		{"localhost:5001", "/dms3ns/example.com", http.StatusOK, "fnord"},
 		{"example.com", "/", http.StatusOK, "fnord"},
 
 		{"working.example.com", "/", http.StatusOK, "fnord"},
 		{"double.example.com", "/", http.StatusOK, "fnord"},
 		{"triple.example.com", "/", http.StatusOK, "fnord"},
-		{"working.example.com", "/ipfs/" + k, http.StatusNotFound, "ipfs resolve -r /ipns/working.example.com/ipfs/" + k + ": no link by that name\n"},
-		{"broken.example.com", "/", http.StatusNotFound, "ipfs resolve -r /ipns/broken.example.com/: " + namesys.ErrResolveFailed.Error() + "\n"},
-		{"broken.example.com", "/ipfs/" + k, http.StatusNotFound, "ipfs resolve -r /ipns/broken.example.com/ipfs/" + k + ": " + namesys.ErrResolveFailed.Error() + "\n"},
+		{"working.example.com", "/dms3fs/" + k, http.StatusNotFound, "dms3fs resolve -r /dms3ns/working.example.com/dms3fs/" + k + ": no link by that name\n"},
+		{"broken.example.com", "/", http.StatusNotFound, "dms3fs resolve -r /dms3ns/broken.example.com/: " + namesys.ErrResolveFailed.Error() + "\n"},
+		{"broken.example.com", "/dms3fs/" + k, http.StatusNotFound, "dms3fs resolve -r /dms3ns/broken.example.com/dms3fs/" + k + ": " + namesys.ErrResolveFailed.Error() + "\n"},
 	} {
 		var c http.Client
 		r, err := http.NewRequest("GET", ts.URL+test.path, nil)
@@ -205,7 +205,7 @@ func TestGatewayGet(t *testing.T) {
 	}
 }
 
-func TestIPNSHostnameRedirect(t *testing.T) {
+func TestDMS3NSHostnameRedirect(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -214,7 +214,7 @@ func TestIPNSHostnameRedirect(t *testing.T) {
 	t.Logf("test server url: %s", ts.URL)
 	defer ts.Close()
 
-	// create /ipns/example.net/foo/index.html
+	// create /dms3ns/example.net/foo/index.html
 	_, dagn1, err := coreunix.AddWrapped(n, strings.NewReader("_"), "_")
 	if err != nil {
 		t.Fatal(err)
@@ -242,7 +242,7 @@ func TestIPNSHostnameRedirect(t *testing.T) {
 
 	k := dagn1.Cid()
 	t.Logf("k: %s\n", k)
-	ns["/ipns/example.net"] = path.FromString("/ipfs/" + k.String())
+	ns["/dms3ns/example.net"] = path.FromString("/dms3fs/" + k.String())
 
 	// make request to directory containing index.html
 	req, err := http.NewRequest("GET", ts.URL+"/foo", nil)
@@ -273,7 +273,7 @@ func TestIPNSHostnameRedirect(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Host = "example.net"
-	req.Header.Set("X-Ipfs-Gateway-Prefix", "/good-prefix")
+	req.Header.Set("X-Dms3Fs-Gateway-Prefix", "/good-prefix")
 
 	res, err = doWithoutRedirect(req)
 	if err != nil {
@@ -292,7 +292,7 @@ func TestIPNSHostnameRedirect(t *testing.T) {
 	}
 }
 
-func TestIPNSHostnameBacklinks(t *testing.T) {
+func TestDMS3NSHostnameBacklinks(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -301,7 +301,7 @@ func TestIPNSHostnameBacklinks(t *testing.T) {
 	t.Logf("test server url: %s", ts.URL)
 	defer ts.Close()
 
-	// create /ipns/example.net/foo/
+	// create /dms3ns/example.net/foo/
 	_, dagn1, err := coreunix.AddWrapped(n, strings.NewReader("1"), "file.txt")
 	if err != nil {
 		t.Fatal(err)
@@ -335,7 +335,7 @@ func TestIPNSHostnameBacklinks(t *testing.T) {
 
 	k := dagn1.Cid()
 	t.Logf("k: %s\n", k)
-	ns["/ipns/example.net"] = path.FromString("/ipfs/" + k.String())
+	ns["/dms3ns/example.net"] = path.FromString("/dms3fs/" + k.String())
 
 	// make request to directory listing
 	req, err := http.NewRequest("GET", ts.URL+"/foo%3F%20%23%3C%27/", nil)
@@ -433,7 +433,7 @@ func TestIPNSHostnameBacklinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Host = "example.net"
-	req.Header.Set("X-Ipfs-Gateway-Prefix", "/good-prefix")
+	req.Header.Set("X-Dms3Fs-Gateway-Prefix", "/good-prefix")
 
 	res, err = doWithoutRedirect(req)
 	if err != nil {
@@ -464,7 +464,7 @@ func TestIPNSHostnameBacklinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Host = "example.net"
-	req.Header.Set("X-Ipfs-Gateway-Prefix", "/bad-prefix")
+	req.Header.Set("X-Dms3Fs-Gateway-Prefix", "/bad-prefix")
 
 	// make request to directory listing with evil prefix
 	req, err = http.NewRequest("GET", ts.URL, nil)
@@ -472,7 +472,7 @@ func TestIPNSHostnameBacklinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Host = "example.net"
-	req.Header.Set("X-Ipfs-Gateway-Prefix", "//good-prefix/foo")
+	req.Header.Set("X-Dms3Fs-Gateway-Prefix", "//good-prefix/foo")
 
 	res, err = doWithoutRedirect(req)
 	if err != nil {

@@ -5,22 +5,22 @@ import (
 	"io"
 	"strings"
 
-	oldcmds "github.com/ipfs/go-ipfs/commands"
-	lgc "github.com/ipfs/go-ipfs/commands/legacy"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	"github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
+	lgc "github.com/dms3-fs/go-dms3-fs/commands/legacy"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	"github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
 )
 
 var ObjectPatchCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Create a new merkledag object based on an existing one.",
 		ShortDescription: `
-'ipfs object patch <root> <cmd> <args>' is a plumbing command used to
+'dms3fs object patch <root> <cmd> <args>' is a plumbing command used to
 build custom DAG objects. It mutates objects, creating new objects as a
 result. This is the Merkle-DAG version of modifying an object.
 `,
@@ -56,7 +56,7 @@ Append data to what already exists in the data segment in the given object.
 
 Example:
 
-	$ echo "hello" | ipfs object patch $HASH append-data
+	$ echo "hello" | dms3fs object patch $HASH append-data
 
 NOTE: This does not append data to a file - it modifies the actual raw
 data within an object. Objects have a max size of 1MB and objects larger than
@@ -105,13 +105,13 @@ the limit will not be respected by the network.
 
 var patchSetDataCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Set the data field of an IPFS object.",
+		Tagline: "Set the data field of an DMS3FS object.",
 		ShortDescription: `
-Set the data of an IPFS object from stdin or with the contents of a file.
+Set the data of an DMS3FS object from stdin or with the contents of a file.
 
 Example:
 
-    $ echo "my data" | ipfs object patch $MYHASH set-data
+    $ echo "my data" | dms3fs object patch $MYHASH set-data
 `,
 	},
 	Arguments: []cmdkit.Argument{
@@ -194,9 +194,9 @@ Add a Merkle-link to the given object and return the hash of the result.
 
 Example:
 
-    $ EMPTY_DIR=$(ipfs object new unixfs-dir)
-    $ BAR=$(echo "bar" | ipfs add -q)
-    $ ipfs object patch $EMPTY_DIR add-link foo $BAR
+    $ EMPTY_DIR=$(dms3fs object new unixfs-dir)
+    $ BAR=$(echo "bar" | dms3fs add -q)
+    $ dms3fs object patch $EMPTY_DIR add-link foo $BAR
 
 This takes an empty directory, and adds a link named 'foo' under it, pointing
 to a file containing 'bar', and returns the hash of the new object.
@@ -205,7 +205,7 @@ to a file containing 'bar', and returns the hash of the new object.
 	Arguments: []cmdkit.Argument{
 		cmdkit.StringArg("root", true, false, "The hash of the node to modify."),
 		cmdkit.StringArg("name", true, false, "Name of link to create."),
-		cmdkit.StringArg("ref", true, false, "IPFS object to add link to."),
+		cmdkit.StringArg("ref", true, false, "DMS3FS object to add link to."),
 	},
 	Options: []cmdkit.Option{
 		cmdkit.BoolOption("create", "p", "Create intermediary nodes."),

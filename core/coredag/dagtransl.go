@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 // DagParser is function used for parsing stream into Node
-type DagParser func(r io.Reader, mhType uint64, mhLen int) ([]ipld.Node, error)
+type DagParser func(r io.Reader, mhType uint64, mhLen int) ([]dms3ld.Node, error)
 
 // FormatParsers is used for mapping format descriptors to DagParsers
 type FormatParsers map[string]DagParser
@@ -53,8 +53,8 @@ var defaultProtobufParsers = FormatParsers{
 }
 
 // ParseInputs uses DefaultInputEncParsers to parse io.Reader described by
-// input encoding and format to an instance of ipld Node
-func ParseInputs(ienc, format string, r io.Reader, mhType uint64, mhLen int) ([]ipld.Node, error) {
+// input encoding and format to an instance of dms3ld Node
+func ParseInputs(ienc, format string, r io.Reader, mhType uint64, mhLen int) ([]dms3ld.Node, error) {
 	return DefaultInputEncParsers.ParseInputs(ienc, format, r, mhType, mhLen)
 }
 
@@ -70,8 +70,8 @@ func (iep InputEncParsers) AddParser(ienc, format string, f DagParser) {
 }
 
 // ParseInputs parses io.Reader described by input encoding and format to
-// an instance of ipld Node
-func (iep InputEncParsers) ParseInputs(ienc, format string, r io.Reader, mhType uint64, mhLen int) ([]ipld.Node, error) {
+// an instance of dms3ld Node
+func (iep InputEncParsers) ParseInputs(ienc, format string, r io.Reader, mhType uint64, mhLen int) ([]dms3ld.Node, error) {
 	parsers, ok := iep[ienc]
 	if !ok {
 		return nil, fmt.Errorf("no input parser for %q", ienc)

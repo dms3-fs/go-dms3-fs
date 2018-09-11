@@ -5,11 +5,11 @@ import (
 
 	context "context"
 
-	"github.com/ipfs/go-ipfs/repo"
+	"github.com/dms3-fs/go-dms3-fs/repo"
 
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	datastore "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	syncds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/sync"
+	datastore "github.com/dms3-fs/go-datastore"
+	syncds "github.com/dms3-fs/go-datastore/sync"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 func TestInitialization(t *testing.T) {
@@ -20,16 +20,16 @@ func TestInitialization(t *testing.T) {
 		{
 			Identity: id,
 			Addresses: config.Addresses{
-				Swarm: []string{"/ip4/0.0.0.0/tcp/4001"},
-				API:   "/ip4/127.0.0.1/tcp/8000",
+				Swarm: []string{"/ip4/0.0.0.0/tcp/4101"},
+				API:   "/ip4/127.0.0.1/tcp/8100",
 			},
 		},
 
 		{
 			Identity: id,
 			Addresses: config.Addresses{
-				Swarm: []string{"/ip4/0.0.0.0/tcp/4001"},
-				API:   "/ip4/127.0.0.1/tcp/8000",
+				Swarm: []string{"/ip4/0.0.0.0/tcp/4101"},
+				API:   "/ip4/127.0.0.1/tcp/8100",
 			},
 		},
 	}

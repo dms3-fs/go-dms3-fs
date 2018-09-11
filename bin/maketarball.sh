@@ -6,15 +6,15 @@ set -euo pipefail
 IFS=$'\n\t'
 
 
-OUTPUT=$(realpath ${1:-go-ipfs-source.tar.gz})
+OUTPUT=$(realpath ${1:-go-dms3-fs-source.tar.gz})
 
 TMPDIR="$(mktemp -d)"
-NEWIPFS="$TMPDIR/github.com/ipfs/go-ipfs"
-mkdir -p "$NEWIPFS"
-cp -r . "$NEWIPFS"
-( cd "$NEWIPFS" &&
+NEWDMS3FS="$TMPDIR/github.com/dms3-fs/go-dms3-fs"
+mkdir -p "$NEWDMS3FS"
+cp -r . "$NEWDMS3FS"
+( cd "$NEWDMS3FS" &&
   echo $PWD &&
-  GOPATH="$TMPDIR" gx install --local &&
+  GOPATH="$TMPDIR" dms3gx install --local &&
   (git rev-parse --short HEAD || true) > .tarball &&
   tar -czf "$OUTPUT" --exclude="./.git" .
 )

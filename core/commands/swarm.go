@@ -9,20 +9,20 @@ import (
 	"sort"
 	"strings"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	repo "github.com/ipfs/go-ipfs/repo"
-	"github.com/ipfs/go-ipfs/repo/fsrepo"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	repo "github.com/dms3-fs/go-dms3-fs/repo"
+	"github.com/dms3-fs/go-dms3-fs/repo/fsrepo"
 
-	swarm "gx/ipfs/QmPWNZRUybw3nwJH3mpkrwB97YEQmXRkzvyh34rpJiih6Q/go-libp2p-swarm"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	mafilter "gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	iaddr "gx/ipfs/QmWnUZVLLk2HKpZAMEsqW3EFNku1xGzG7bvvAHeEQQoi2V/go-ipfs-addr"
-	inet "gx/ipfs/QmX5J1q63BrrDTbpcHifrFbxH3cMZsvaNajy6u3zCpzBXs/go-libp2p-net"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	iaddr "github.com/dms3-fs/go-fs-addr"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	config "github.com/dms3-fs/go-fs-config"
+	inet "github.com/dms3-p2p/go-p2p-net"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	swarm "github.com/dms3-p2p/go-p2p-swarm"
+	ma "github.com/dms3-mft/go-multiaddr"
+	mafilter "github.com/whyrusleeping/multiaddr-filter"
 )
 
 type stringList struct {
@@ -37,9 +37,9 @@ var SwarmCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Interact with the swarm.",
 		ShortDescription: `
-'ipfs swarm' is a tool to manipulate the network swarm. The swarm is the
+'dms3fs swarm' is a tool to manipulate the network swarm. The swarm is the
 component that opens, listens for, and maintains connections to other
-ipfs peers in the internet.
+dms3fs peers in the internet.
 `,
 	},
 	Subcommands: map[string]*cmds.Command{
@@ -55,7 +55,7 @@ var swarmPeersCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List peers with open connections.",
 		ShortDescription: `
-'ipfs swarm peers' lists the set of peers this node is connected to.
+'dms3fs swarm peers' lists the set of peers this node is connected to.
 `,
 	},
 	Options: []cmdkit.Option{
@@ -135,9 +135,9 @@ var swarmPeersCmd = &cmds.Command{
 			}
 
 			buf := new(bytes.Buffer)
-			pipfs := ma.ProtocolWithCode(ma.P_IPFS).Name
+			pdms3fs := ma.ProtocolWithCode(ma.P_DMS3FS).Name
 			for _, info := range ci.Peers {
-				ids := fmt.Sprintf("/%s/%s", pipfs, info.Peer)
+				ids := fmt.Sprintf("/%s/%s", pdms3fs, info.Peer)
 				if strings.HasSuffix(info.Addr, ids) {
 					fmt.Fprintf(buf, "%s", info.Addr)
 				} else {
@@ -207,7 +207,7 @@ var swarmAddrsCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List known addresses. Useful for debugging.",
 		ShortDescription: `
-'ipfs swarm addrs' lists all addresses this node is aware of.
+'dms3fs swarm addrs' lists all addresses this node is aware of.
 `,
 	},
 	Subcommands: map[string]*cmds.Command{
@@ -276,7 +276,7 @@ var swarmAddrsLocalCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List local addresses.",
 		ShortDescription: `
-'ipfs swarm addrs local' lists all local listening addresses announced to the network.
+'dms3fs swarm addrs local' lists all local listening addresses announced to the network.
 `,
 	},
 	Options: []cmdkit.Option{
@@ -302,7 +302,7 @@ var swarmAddrsLocalCmd = &cmds.Command{
 		for _, addr := range n.PeerHost.Addrs() {
 			saddr := addr.String()
 			if showid {
-				saddr = path.Join(saddr, "ipfs", id)
+				saddr = path.Join(saddr, "dms3fs", id)
 			}
 			addrs = append(addrs, saddr)
 		}
@@ -319,7 +319,7 @@ var swarmAddrsListenCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List interface listening addresses.",
 		ShortDescription: `
-'ipfs swarm addrs listen' lists all interface addresses the node is listening on.
+'dms3fs swarm addrs listen' lists all interface addresses the node is listening on.
 `,
 	},
 	Run: func(req cmds.Request, res cmds.Response) {
@@ -359,11 +359,11 @@ var swarmConnectCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Open connection to a given address.",
 		ShortDescription: `
-'ipfs swarm connect' opens a new direct connection to a peer address.
+'dms3fs swarm connect' opens a new direct connection to a peer address.
 
-The address format is an IPFS multiaddr:
+The address format is an DMS3FS multiaddr:
 
-ipfs swarm connect /ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ
+dms3fs swarm connect /ip4/50.241.107.73/tcp/4101/dms3fs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ
 `,
 	},
 	Arguments: []cmdkit.Argument{
@@ -424,12 +424,12 @@ var swarmDisconnectCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Close connection to a given address.",
 		ShortDescription: `
-'ipfs swarm disconnect' closes a connection to a peer address. The address
-format is an IPFS multiaddr:
+'dms3fs swarm disconnect' closes a connection to a peer address. The address
+format is an DMS3FS multiaddr:
 
-ipfs swarm disconnect /ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ
+dms3fs swarm disconnect /ip4/50.241.107.73/tcp/4101/dms3fs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ
 
-The disconnect is not permanent; if ipfs needs to talk to that address later,
+The disconnect is not permanent; if dms3fs needs to talk to that address later,
 it will reconnect.
 `,
 	},
@@ -523,8 +523,8 @@ func stringListMarshaler(res cmds.Response) (io.Reader, error) {
 
 // parseAddresses is a function that takes in a slice of string peer addresses
 // (multiaddr + peerid) and returns slices of multiaddrs and peerids.
-func parseAddresses(addrs []string) (iaddrs []iaddr.IPFSAddr, err error) {
-	iaddrs = make([]iaddr.IPFSAddr, len(addrs))
+func parseAddresses(addrs []string) (iaddrs []iaddr.DMS3FSAddr, err error) {
+	iaddrs = make([]iaddr.DMS3FSAddr, len(addrs))
 	for i, saddr := range addrs {
 		iaddrs[i], err = iaddr.ParseString(saddr)
 		if err != nil {
@@ -566,7 +566,7 @@ var swarmFiltersCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Manipulate address filters.",
 		ShortDescription: `
-'ipfs swarm filters' will list out currently applied filters. Its subcommands
+'dms3fs swarm filters' will list out currently applied filters. Its subcommands
 can be used to add or remove said filters. Filters are specified using the
 multiaddr-filter format:
 
@@ -625,9 +625,9 @@ var swarmFiltersAddCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Add an address filter.",
 		ShortDescription: `
-'ipfs swarm filters add' will add an address filter to the daemons swarm.
+'dms3fs swarm filters add' will add an address filter to the daemons swarm.
 Filters applied this way will not persist daemon reboots, to achieve that,
-add your filters to the ipfs config file.
+add your filters to the dms3fs config file.
 `,
 	},
 	Arguments: []cmdkit.Argument{
@@ -698,9 +698,9 @@ var swarmFiltersRmCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Remove an address filter.",
 		ShortDescription: `
-'ipfs swarm filters rm' will remove an address filter from the daemons swarm.
+'dms3fs swarm filters rm' will remove an address filter from the daemons swarm.
 Filters removed this way will not persist daemon reboots, to achieve that,
-remove your filters from the ipfs config file.
+remove your filters from the dms3fs config file.
 `,
 	},
 	Arguments: []cmdkit.Argument{

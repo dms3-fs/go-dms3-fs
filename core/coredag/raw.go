@@ -5,15 +5,15 @@ import (
 	"io/ioutil"
 	"math"
 
-	"gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
+	"github.com/dms3-fs/go-merkledag"
 
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	block "gx/ipfs/QmWAzSEoqZ6xU6pu8yL8e5WaMb7wtbfbhhN4p1DknUPtr3/go-block-format"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	block "github.com/dms3-fs/go-block-format"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
-func rawRawParser(r io.Reader, mhType uint64, mhLen int) ([]ipld.Node, error) {
+func rawRawParser(r io.Reader, mhType uint64, mhLen int) ([]dms3ld.Node, error) {
 	if mhType == math.MaxUint64 {
 		mhType = mh.SHA2_256
 	}
@@ -33,5 +33,5 @@ func rawRawParser(r io.Reader, mhType uint64, mhLen int) ([]ipld.Node, error) {
 		return nil, err
 	}
 	nd := &merkledag.RawNode{Block: blk}
-	return []ipld.Node{nd}, nil
+	return []dms3ld.Node{nd}, nil
 }

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	"github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	"github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 )
 
 func TestMutablePath(t *testing.T) {
@@ -16,14 +16,14 @@ func TestMutablePath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// get self /ipns path
+	// get self /dms3ns path
 	keys, err := api.Key().List(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if !keys[0].Path().Mutable() {
-		t.Error("expected self /ipns path to be mutable")
+		t.Error("expected self /dms3ns path to be mutable")
 	}
 
 	blk, err := api.Block().Put(ctx, strings.NewReader(`foo`))
@@ -32,7 +32,7 @@ func TestMutablePath(t *testing.T) {
 	}
 
 	if blk.Mutable() {
-		t.Error("expected /ipld path to be immutable")
+		t.Error("expected /dms3ld path to be immutable")
 	}
 }
 

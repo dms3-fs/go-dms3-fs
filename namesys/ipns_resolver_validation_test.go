@@ -5,22 +5,22 @@ import (
 	"testing"
 	"time"
 
-	opts "github.com/ipfs/go-ipfs/namesys/opts"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	opts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
+	path "github.com/dms3-fs/go-path"
 
-	ipns "gx/ipfs/QmNqBhXpBKa5jcjoUZHfxDgAFxtqK3rDA5jtW811GBvVob/go-ipns"
-	u "gx/ipfs/QmPdKqUcHGFdeSpvjVoaTRPPstGif9GBZb5Q56RVw9o69A/go-ipfs-util"
-	ci "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	testutil "gx/ipfs/QmRNhSdqzMcuRxX9A1egBeQ3BhDTguDV5HPwi8wRykkPU8/go-testutil"
-	routing "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing"
-	ropts "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing/options"
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	dssync "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/sync"
-	mockrouting "gx/ipfs/Qmd45r5jHr1PKMNQqifnbZy1ZQwHdtXUDJFamUEvUJE544/go-ipfs-routing/mock"
-	offline "gx/ipfs/Qmd45r5jHr1PKMNQqifnbZy1ZQwHdtXUDJFamUEvUJE544/go-ipfs-routing/offline"
-	record "gx/ipfs/QmdHb9aBELnQKTVhvvA3hsQbRgUAwsWUzBP2vZ6Y5FBYvE/go-libp2p-record"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	ds "github.com/dms3-fs/go-datastore"
+	dssync "github.com/dms3-fs/go-datastore/sync"
+	mockrouting "github.com/dms3-fs/go-fs-routing/mock"
+	offline "github.com/dms3-fs/go-fs-routing/offline"
+	u "github.com/dms3-fs/go-fs-util"
+	dms3ns "github.com/dms3-fs/go-dms3ns"
+	ci "github.com/dms3-p2p/go-p2p-crypto"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	record "github.com/dms3-p2p/go-p2p-record"
+	routing "github.com/dms3-p2p/go-p2p-routing"
+	ropts "github.com/dms3-p2p/go-p2p-routing/options"
+	testutil "github.com/dms3-p2p/go-testutil"
 )
 
 func TestResolverValidation(t *testing.T) {
@@ -30,15 +30,15 @@ func TestResolverValidation(t *testing.T) {
 	peerstore := pstore.NewPeerstore()
 
 	vstore := newMockValueStore(rid, dstore, peerstore)
-	resolver := NewIpnsResolver(vstore)
+	resolver := NewDms3NsResolver(vstore)
 
 	nvVstore := offline.NewOfflineRouter(dstore, mockrouting.MockValidator{})
 
 	// Create entry with expiry in one hour
-	priv, id, _, ipnsDHTPath := genKeys(t)
+	priv, id, _, dms3nsDHTPath := genKeys(t)
 	ts := time.Now()
-	p := []byte("/ipfs/QmfM2r8seH2GiRaC4esTjeraXEachRt8ZsSeGaWTPLyMoG")
-	entry, err := ipns.Create(priv, p, 1, ts.Add(time.Hour))
+	p := []byte("/dms3fs/QmfM2r8seH2GiRaC4esTjeraXEachRt8ZsSeGaWTPLyMoG")
+	entry, err := dms3ns.Create(priv, p, 1, ts.Add(time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestResolverValidation(t *testing.T) {
 	}
 
 	// Publish entry
-	err = PublishEntry(ctx, vstore, ipnsDHTPath, entry)
+	err = PublishEntry(ctx, vstore, dms3nsDHTPath, entry)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,13 +65,13 @@ func TestResolverValidation(t *testing.T) {
 	}
 
 	// Create expired entry
-	expiredEntry, err := ipns.Create(priv, p, 1, ts.Add(-1*time.Hour))
+	expiredEntry, err := dms3ns.Create(priv, p, 1, ts.Add(-1*time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Publish entry
-	err = PublishEntry(ctx, nvVstore, ipnsDHTPath, expiredEntry)
+	err = PublishEntry(ctx, nvVstore, dms3nsDHTPath, expiredEntry)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,11 +79,11 @@ func TestResolverValidation(t *testing.T) {
 	// Record should fail validation because entry is expired
 	_, _, err = resolver.resolveOnce(ctx, id.Pretty(), opts.DefaultResolveOpts())
 	if err == nil {
-		t.Fatal("ValidateIpnsRecord should have returned error")
+		t.Fatal("ValidateDms3NsRecord should have returned error")
 	}
 
-	// Create IPNS record path with a different private key
-	priv2, id2, _, ipnsDHTPath2 := genKeys(t)
+	// Create DMS3NS record path with a different private key
+	priv2, id2, _, dms3nsDHTPath2 := genKeys(t)
 
 	// Make peer's public key available in peer store
 	err = peerstore.AddPubKey(id2, priv2.GetPublic())
@@ -92,25 +92,25 @@ func TestResolverValidation(t *testing.T) {
 	}
 
 	// Publish entry
-	err = PublishEntry(ctx, nvVstore, ipnsDHTPath2, entry)
+	err = PublishEntry(ctx, nvVstore, dms3nsDHTPath2, entry)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Record should fail validation because public key defined by
-	// ipns path doesn't match record signature
+	// dms3ns path doesn't match record signature
 	_, _, err = resolver.resolveOnce(ctx, id2.Pretty(), opts.DefaultResolveOpts())
 	if err == nil {
-		t.Fatal("ValidateIpnsRecord should have failed signature verification")
+		t.Fatal("ValidateDms3NsRecord should have failed signature verification")
 	}
 
 	// Publish entry without making public key available in peer store
-	priv3, id3, pubkDHTPath3, ipnsDHTPath3 := genKeys(t)
-	entry3, err := ipns.Create(priv3, p, 1, ts.Add(time.Hour))
+	priv3, id3, pubkDHTPath3, dms3nsDHTPath3 := genKeys(t)
+	entry3, err := dms3ns.Create(priv3, p, 1, ts.Add(time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = PublishEntry(ctx, nvVstore, ipnsDHTPath3, entry3)
+	err = PublishEntry(ctx, nvVstore, dms3nsDHTPath3, entry3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func TestResolverValidation(t *testing.T) {
 	// in peer store or on network
 	_, _, err = resolver.resolveOnce(ctx, id3.Pretty(), opts.DefaultResolveOpts())
 	if err == nil {
-		t.Fatal("ValidateIpnsRecord should have failed because public key was not found")
+		t.Fatal("ValidateDms3NsRecord should have failed because public key was not found")
 	}
 
 	// Publish public key to the network
@@ -151,7 +151,7 @@ func genKeys(t *testing.T) (ci.PrivKey, peer.ID, string, string) {
 		t.Fatal(err)
 	}
 
-	return priv, pid, PkKeyForID(pid), ipns.RecordKey(pid)
+	return priv, pid, PkKeyForID(pid), dms3ns.RecordKey(pid)
 }
 
 type mockValueStore struct {
@@ -162,7 +162,7 @@ type mockValueStore struct {
 func newMockValueStore(id testutil.Identity, dstore ds.Datastore, kbook pstore.KeyBook) *mockValueStore {
 	return &mockValueStore{
 		r: offline.NewOfflineRouter(dstore, record.NamespacedValidator{
-			"ipns": ipns.Validator{KeyBook: kbook},
+			"dms3ns": dms3ns.Validator{KeyBook: kbook},
 			"pk":   record.PublicKeyValidator{},
 		}),
 		kbook: kbook,

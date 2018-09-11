@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"io"
 
-	oldcmds "github.com/ipfs/go-ipfs/commands"
-	lgc "github.com/ipfs/go-ipfs/commands/legacy"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	bitswap "gx/ipfs/QmTtmrK4iiM3MxWNA3pvbM9ekQiGZAiFyo57GP8B9FFgtz/go-bitswap"
-	decision "gx/ipfs/QmTtmrK4iiM3MxWNA3pvbM9ekQiGZAiFyo57GP8B9FFgtz/go-bitswap/decision"
+	bitswap "github.com/dms3-fs/go-bitswap"
+	decision "github.com/dms3-fs/go-bitswap/decision"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
+	lgc "github.com/dms3-fs/go-dms3-fs/commands/legacy"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
 
-	"gx/ipfs/QmPSBJL4momYnE7DcUyk2DVhD6rH488ZmHBGLbxNdhU44K/go-humanize"
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	"github.com/dustin/go-humanize"
+	cid "github.com/dms3-fs/go-cid"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	peer "github.com/dms3-p2p/go-p2p-peer"
 )
 
 var BitswapCmd = &cmds.Command{
@@ -199,7 +199,7 @@ var ledgerCmd = &oldcmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Show the current ledger for a peer.",
 		ShortDescription: `
-The Bitswap decision engine tracks the number of bytes exchanged between IPFS
+The Bitswap decision engine tracks the number of bytes exchanged between DMS3FS
 nodes, and stores this information as a collection of ledgers. This command
 prints the ledger associated with a given peer.
 `,

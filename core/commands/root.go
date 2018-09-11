@@ -5,22 +5,22 @@ import (
 	"io"
 	"strings"
 
-	oldcmds "github.com/ipfs/go-ipfs/commands"
-	lgc "github.com/ipfs/go-ipfs/commands/legacy"
-	dag "github.com/ipfs/go-ipfs/core/commands/dag"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	name "github.com/ipfs/go-ipfs/core/commands/name"
-	ocmd "github.com/ipfs/go-ipfs/core/commands/object"
-	unixfs "github.com/ipfs/go-ipfs/core/commands/unixfs"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
+	lgc "github.com/dms3-fs/go-dms3-fs/commands/legacy"
+	dag "github.com/dms3-fs/go-dms3-fs/core/commands/dag"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	name "github.com/dms3-fs/go-dms3-fs/core/commands/name"
+	ocmd "github.com/dms3-fs/go-dms3-fs/core/commands/object"
+	unixfs "github.com/dms3-fs/go-dms3-fs/core/commands/unixfs"
 
-	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmds"
+	logging "github.com/dms3-fs/go-log"
 )
 
 var log = logging.Logger("core/commands")
 
-var ErrNotOnline = errors.New("this command must be run in online mode. Try running 'ipfs daemon' first")
+var ErrNotOnline = errors.New("this command must be run in online mode. Try running 'dms3fs daemon' first")
 
 const (
 	ApiOption = "api"
@@ -29,13 +29,13 @@ const (
 var Root = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline:  "Global p2p merkle-dag filesystem.",
-		Synopsis: "ipfs [--config=<config> | -c] [--debug=<debug> | -D] [--help=<help>] [-h=<h>] [--local=<local> | -L] [--api=<api>] <command> ...",
+		Synopsis: "dms3fs [--config=<config> | -c] [--debug=<debug> | -D] [--help=<help>] [-h=<h>] [--local=<local> | -L] [--api=<api>] <command> ...",
 		Subcommands: `
 BASIC COMMANDS
-  init          Initialize ipfs local configuration
-  add <path>    Add a file to IPFS
-  cat <ref>     Show IPFS object data
-  get <ref>     Download IPFS objects
+  init          Initialize dms3fs local configuration
+  add <path>    Add a file to DMS3FS
+  cat <ref>     Show DMS3FS object data
+  get <ref>     Download DMS3FS objects
   ls <ref>      List links from an object
   refs <ref>    List hashes of links from an object
 
@@ -43,23 +43,23 @@ DATA STRUCTURE COMMANDS
   block         Interact with raw blocks in the datastore
   object        Interact with raw dag nodes
   files         Interact with objects as if they were a unix filesystem
-  dag           Interact with IPLD documents (experimental)
+  dag           Interact with DMS3LD documents (experimental)
 
 ADVANCED COMMANDS
   daemon        Start a long-running daemon process
-  mount         Mount an IPFS read-only mountpoint
+  mount         Mount an DMS3FS read-only mountpoint
   resolve       Resolve any type of name
-  name          Publish and resolve IPNS names
-  key           Create and list IPNS name keypairs
+  name          Publish and resolve DMS3NS names
+  key           Create and list DMS3NS name keypairs
   dns           Resolve DNS links
   pin           Pin objects to local storage
-  repo          Manipulate the IPFS repository
+  repo          Manipulate the DMS3FS repository
   stats         Various operational stats
   p2p           Libp2p stream mounting
   filestore     Manage the filestore (experimental)
 
 NETWORK COMMANDS
-  id            Show info about IPFS peers
+  id            Show info about DMS3FS peers
   bootstrap     Add or remove bootstrap peers
   swarm         Manage connections to the p2p network
   dht           Query the DHT for values or peers
@@ -68,17 +68,17 @@ NETWORK COMMANDS
 
 TOOL COMMANDS
   config        Manage configuration
-  version       Show ipfs version information
-  update        Download and apply go-ipfs updates
+  version       Show dms3fs version information
+  update        Download and apply go-dms3-fs updates
   commands      List all available commands
 
-Use 'ipfs <command> --help' to learn more about each command.
+Use 'dms3fs <command> --help' to learn more about each command.
 
-ipfs uses a repository in the local file system. By default, the repo is
-located at ~/.ipfs. To change the repo location, set the $IPFS_PATH
+dms3fs uses a repository in the local file system. By default, the repo is
+located at ~/.dms3-fs. To change the repo location, set the $DMS3FS_PATH
 environment variable:
 
-  export IPFS_PATH=/path/to/ipfsrepo
+  export DMS3FS_PATH=/path/to/dms3fsrepo
 
 EXIT STATUS
 
@@ -94,7 +94,7 @@ The CLI will exit with one of the following values:
 		cmdkit.BoolOption("help", "Show the full command help text."),
 		cmdkit.BoolOption("h", "Show a short version of the command help text."),
 		cmdkit.BoolOption("local", "L", "Run the command locally, instead of using the daemon."),
-		cmdkit.StringOption(ApiOption, "Use a specific API instance (defaults to /ip4/127.0.0.1/tcp/5001)"),
+		cmdkit.StringOption(ApiOption, "Use a specific API instance (defaults to /ip4/127.0.0.1/tcp/5101)"),
 
 		// global options, added to every command
 		cmds.OptionEncodingType,
@@ -103,7 +103,7 @@ The CLI will exit with one of the following values:
 	},
 }
 
-// commandsDaemonCmd is the "ipfs commands" command for daemon
+// commandsDaemonCmd is the "dms3fs commands" command for daemon
 var CommandsDaemonCmd = CommandsCmd(Root)
 
 var rootSubcommands = map[string]*cmds.Command{
@@ -166,7 +166,7 @@ var rootROSubcommands = map[string]*cmds.Command{
 	"ls":  lgc.NewCommand(LsCmd),
 	"name": &cmds.Command{
 		Subcommands: map[string]*cmds.Command{
-			"resolve": name.IpnsCmd,
+			"resolve": name.Dms3NsCmd,
 		},
 	},
 	"object": lgc.NewCommand(&oldcmds.Command{

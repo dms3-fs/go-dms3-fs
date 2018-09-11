@@ -1,11 +1,11 @@
 /*
-Package core implements the IpfsNode object and related methods.
+Package core implements the Dms3FsNode object and related methods.
 
 Packages underneath core/ provide a (relatively) stable, low-level API
-to carry out most IPFS-related tasks.  For more details on the other
-interfaces and how core/... fits into the bigger IPFS picture, see:
+to carry out most DMS3FS-related tasks.  For more details on the other
+interfaces and how core/... fits into the bigger DMS3FS picture, see:
 
-  $ godoc github.com/ipfs/go-ipfs
+  $ godoc github.com/dms3-fs/go-dms3-fs
 */
 package core
 
@@ -20,65 +20,65 @@ import (
 	"strings"
 	"time"
 
-	version "github.com/ipfs/go-ipfs"
-	rp "github.com/ipfs/go-ipfs/exchange/reprovide"
-	filestore "github.com/ipfs/go-ipfs/filestore"
-	mount "github.com/ipfs/go-ipfs/fuse/mount"
-	namesys "github.com/ipfs/go-ipfs/namesys"
-	ipnsrp "github.com/ipfs/go-ipfs/namesys/republisher"
-	p2p "github.com/ipfs/go-ipfs/p2p"
-	pin "github.com/ipfs/go-ipfs/pin"
-	repo "github.com/ipfs/go-ipfs/repo"
+	version "github.com/dms3-fs/go-dms3-fs"
+	rp "github.com/dms3-fs/go-dms3-fs/exchange/reprovide"
+	filestore "github.com/dms3-fs/go-dms3-fs/filestore"
+	mount "github.com/dms3-fs/go-dms3-fs/fuse/mount"
+	namesys "github.com/dms3-fs/go-dms3-fs/namesys"
+	dms3nsrp "github.com/dms3-fs/go-dms3-fs/namesys/republisher"
+	p2p "github.com/dms3-fs/go-dms3-fs/p2p"
+	pin "github.com/dms3-fs/go-dms3-fs/pin"
+	repo "github.com/dms3-fs/go-dms3-fs/repo"
 
-	u "gx/ipfs/QmPdKqUcHGFdeSpvjVoaTRPPstGif9GBZb5Q56RVw9o69A/go-ipfs-util"
-	psrouter "gx/ipfs/QmPksYjuFjt2M63ufuDYEFdwVAmFcDGJgoED8T8dwfcwED/go-libp2p-pubsub-router"
-	ic "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	libp2p "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p"
-	discovery "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/discovery"
-	p2pbhost "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/host/basic"
-	rhost "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/host/routed"
-	identify "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/protocol/identify"
-	ping "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/protocol/ping"
-	ft "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	connmgr "gx/ipfs/QmRAvQVfAFfzqwk1VBYJMci9SrqJcMULNJYeZzzprDRn5V/go-libp2p-connmgr"
-	p2phost "gx/ipfs/QmRRCrNRs4qxotXx7WJT6SpCvSNEhXvyBcVjXY2K71pcjE/go-libp2p-host"
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	merkledag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	routing "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing"
-	goprocess "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
-	mamask "gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
-	mafilter "gx/ipfs/QmSW4uNHbvQia8iZDXzbwjiyHQtnyo9aFqfQAMasj3TJ6Y/go-maddr-filter"
-	dht "gx/ipfs/QmTRj8mj6X5LtjVochPPSNX6MTbJ6iVojcfakWJKG13re7/go-libp2p-kad-dht"
-	dhtopts "gx/ipfs/QmTRj8mj6X5LtjVochPPSNX6MTbJ6iVojcfakWJKG13re7/go-libp2p-kad-dht/opts"
-	bitswap "gx/ipfs/QmTtmrK4iiM3MxWNA3pvbM9ekQiGZAiFyo57GP8B9FFgtz/go-bitswap"
-	bsnet "gx/ipfs/QmTtmrK4iiM3MxWNA3pvbM9ekQiGZAiFyo57GP8B9FFgtz/go-bitswap/network"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	ifconnmgr "gx/ipfs/QmUPz6FCzCCU7sTY9Sore5NGSUA8YSF2yMkLPjDFq7wGqD/go-libp2p-interface-connmgr"
-	floodsub "gx/ipfs/QmVFB6rGJEZnzJrQwoEhbyDs1tA8RVsQvCS6JXpuw9Xtta/go-libp2p-floodsub"
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	exchange "gx/ipfs/QmWw71Mz9PXKgYG8ZfTYN7Ax2Zm48Eurbne3wC2y7CKmLz/go-ipfs-exchange-interface"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	smux "gx/ipfs/QmY9JXR3FupnYAYJWK9aMr9bCpqWKcToQ1tz8DVGTrHpHw/go-stream-muxer"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	pnet "gx/ipfs/QmZaQ3K9PRd5sYYoG1xbTGPtd3N7TYiKBRmcBUTsx8HVET/go-libp2p-pnet"
-	bserv "gx/ipfs/QmbSB9Uh3wVgmiCb1fAb8zuC3qAE6un4kd1jvatUurfAmB/go-blockservice"
-	circuit "gx/ipfs/Qmbc6WjgbkaYhPw5dd6X2RLGiJz854dPPKkyZf52vE2PTS/go-libp2p-circuit"
-	bstore "gx/ipfs/QmcmpX42gtDv1fz24kau4wjS9hfwWj5VexWBKgGnWzsyag/go-ipfs-blockstore"
-	yamux "gx/ipfs/QmcsgrV3nCAKjiHKZhKVXWc4oY3WBECJCqahXEMpHeMrev/go-smux-yamux"
-	rhelpers "gx/ipfs/Qmd22J9AnyR3QUH56WPXkrTbCNkQ4x7TWWinHcZBhQkgVw/go-libp2p-routing-helpers"
-	nilrouting "gx/ipfs/Qmd45r5jHr1PKMNQqifnbZy1ZQwHdtXUDJFamUEvUJE544/go-ipfs-routing/none"
-	offroute "gx/ipfs/Qmd45r5jHr1PKMNQqifnbZy1ZQwHdtXUDJFamUEvUJE544/go-ipfs-routing/offline"
-	record "gx/ipfs/QmdHb9aBELnQKTVhvvA3hsQbRgUAwsWUzBP2vZ6Y5FBYvE/go-libp2p-record"
-	"gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
-	mfs "gx/ipfs/QmdghKsSDa2AD1kC4qYRnVYWqZecdSBRZjeXRdhMYYhafj/go-mfs"
-	metrics "gx/ipfs/QmdhwKw53CTV8EJSAsR1bpmMT5kXiWBgeAyv1EXeeDiXqR/go-libp2p-metrics"
-	mplex "gx/ipfs/QmdiBZzwGtN2yHJrWD9ojQ7ASS48nv7BcojWLkYd1ZtrV2/go-smux-multiplex"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	bitswap "github.com/dms3-fs/go-bitswap"
+	bsnet "github.com/dms3-fs/go-bitswap/network"
+	bserv "github.com/dms3-fs/go-blockservice"
+	cid "github.com/dms3-fs/go-cid"
+	ds "github.com/dms3-fs/go-datastore"
+	bstore "github.com/dms3-fs/go-fs-blockstore"
+	config "github.com/dms3-fs/go-fs-config"
+	exchange "github.com/dms3-fs/go-fs-exchange-interface"
+	nilrouting "github.com/dms3-fs/go-fs-routing/none"
+	offroute "github.com/dms3-fs/go-fs-routing/offline"
+	u "github.com/dms3-fs/go-fs-util"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	logging "github.com/dms3-fs/go-log"
+	merkledag "github.com/dms3-fs/go-merkledag"
+	mfs "github.com/dms3-fs/go-mfs"
+	"github.com/dms3-fs/go-path/resolver"
+	ft "github.com/dms3-fs/go-unixfs"
+	goprocess "github.com/jbenet/goprocess"
+	floodsub "github.com/dms3-p2p/go-floodsub"
+	dms3p2p "github.com/dms3-p2p/go-p2p"
+	circuit "github.com/dms3-p2p/go-p2p-circuit"
+	connmgr "github.com/dms3-p2p/go-p2p-connmgr"
+	ic "github.com/dms3-p2p/go-p2p-crypto"
+	p2phost "github.com/dms3-p2p/go-p2p-host"
+	ifconnmgr "github.com/dms3-p2p/go-p2p-interface-connmgr"
+	dht "github.com/dms3-p2p/go-p2p-kad-dht"
+	dhtopts "github.com/dms3-p2p/go-p2p-kad-dht/opts"
+	metrics "github.com/dms3-p2p/go-p2p-metrics"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	pnet "github.com/dms3-p2p/go-p2p-pnet"
+	psrouter "github.com/dms3-p2p/go-p2p-pubsub-router"
+	record "github.com/dms3-p2p/go-p2p-record"
+	routing "github.com/dms3-p2p/go-p2p-routing"
+	rhelpers "github.com/dms3-p2p/go-p2p-routing-helpers"
+	discovery "github.com/dms3-p2p/go-p2p/p2p/discovery"
+	p2pbhost "github.com/dms3-p2p/go-p2p/p2p/host/basic"
+	rhost "github.com/dms3-p2p/go-p2p/p2p/host/routed"
+	identify "github.com/dms3-p2p/go-p2p/p2p/protocol/identify"
+	ping "github.com/dms3-p2p/go-p2p/p2p/protocol/ping"
+	mafilter "github.com/dms3-p2p/go-maddr-filter"
+	smux "github.com/dms3-p2p/go-stream-muxer"
+	ma "github.com/dms3-mft/go-multiaddr"
+	mplex "github.com/dms3-why/go-smux-multiplex"
+	yamux "github.com/dms3-why/go-smux-yamux"
+	mamask "github.com/whyrusleeping/multiaddr-filter"
 )
 
-const IpnsValidatorTag = "ipns"
+const Dms3NsValidatorTag = "dms3ns"
 
 const kReprovideFrequency = time.Hour * 12
 const discoveryConnTimeout = time.Second * 30
@@ -95,11 +95,11 @@ const (
 )
 
 func init() {
-	identify.ClientVersion = "go-ipfs/" + version.CurrentVersionNumber + "/" + version.CurrentCommit
+	identify.ClientVersion = "go-dms3-fs/" + version.CurrentVersionNumber + "/" + version.CurrentCommit
 }
 
-// IpfsNode is IPFS Core module. It represents an IPFS instance.
-type IpfsNode struct {
+// Dms3FsNode is DMS3FS Core module. It represents an DMS3FS instance.
+type Dms3FsNode struct {
 
 	// Self
 	Identity peer.ID // the local node's identity
@@ -119,7 +119,7 @@ type IpfsNode struct {
 	BaseBlocks      bstore.Blockstore    // the raw blockstore, no filestore wrapping
 	GCLocker        bstore.GCLocker      // the locker used to protect the blockstore during gc
 	Blocks          bserv.BlockService   // the block service, get/add blocks.
-	DAG             ipld.DAGService      // the merkle dag service, get/add objects.
+	DAG             dms3ld.DAGService      // the merkle dag service, get/add objects.
 	Resolver        *resolver.Resolver   // the path resolution system
 	Reporter        metrics.Reporter
 	Discovery       discovery.Service
@@ -129,16 +129,16 @@ type IpfsNode struct {
 	// Online
 	PeerHost     p2phost.Host        // the network host (server+client)
 	Bootstrapper io.Closer           // the periodic bootstrapper
-	Routing      routing.IpfsRouting // the routing system. recommend ipfs-dht
+	Routing      routing.Dms3FsRouting // the routing system. recommend dms3fs-dht
 	Exchange     exchange.Interface  // the block exchange + strategy (bitswap)
 	Namesys      namesys.NameSystem  // the name system, resolves paths to hashes
 	Ping         *ping.PingService
 	Reprovider   *rp.Reprovider // the value reprovider system
-	IpnsRepub    *ipnsrp.Republisher
+	Dms3NsRepub    *dms3nsrp.Republisher
 
 	Floodsub *floodsub.PubSub
 	PSRouter *psrouter.PubsubValueStore
-	DHT      *dht.IpfsDHT
+	DHT      *dht.Dms3FsDHT
 	P2P      *p2p.P2P
 
 	proc goprocess.Process
@@ -152,11 +152,11 @@ type IpfsNode struct {
 // perhaps be moved to the daemon or mount. It's here because
 // it needs to be accessible across daemon requests.
 type Mounts struct {
-	Ipfs mount.Mount
-	Ipns mount.Mount
+	Dms3Fs mount.Mount
+	Dms3Ns mount.Mount
 }
 
-func (n *IpfsNode) startOnlineServices(ctx context.Context, routingOption RoutingOption, hostOption HostOption, do DiscoveryOption, pubsub, ipnsps, mplex bool) error {
+func (n *Dms3FsNode) startOnlineServices(ctx context.Context, routingOption RoutingOption, hostOption HostOption, do DiscoveryOption, pubsub, dms3nsps, mplex bool) error {
 	if n.PeerHost != nil { // already online.
 		return errors.New("node already online")
 	}
@@ -172,19 +172,19 @@ func (n *IpfsNode) startOnlineServices(ctx context.Context, routingOption Routin
 		return err
 	}
 
-	var libp2pOpts []libp2p.Option
+	var dms3p2pOpts []dms3p2p.Option
 	for _, s := range cfg.Swarm.AddrFilters {
 		f, err := mamask.NewMask(s)
 		if err != nil {
 			return fmt.Errorf("incorrectly formatted address filter in config: %s", s)
 		}
-		libp2pOpts = append(libp2pOpts, libp2p.FilterAddresses(f))
+		dms3p2pOpts = append(dms3p2pOpts, dms3p2p.FilterAddresses(f))
 	}
 
 	if !cfg.Swarm.DisableBandwidthMetrics {
 		// Set reporter
 		n.Reporter = metrics.NewBandwidthCounter()
-		libp2pOpts = append(libp2pOpts, libp2p.BandwidthReporter(n.Reporter))
+		dms3p2pOpts = append(dms3p2pOpts, dms3p2p.BandwidthReporter(n.Reporter))
 	}
 
 	swarmkey, err := n.Repo.SwarmKey()
@@ -217,7 +217,7 @@ func (n *IpfsNode) startOnlineServices(ctx context.Context, routingOption Routin
 			}
 		}()
 
-		libp2pOpts = append(libp2pOpts, libp2p.PrivateNetwork(protec))
+		dms3p2pOpts = append(dms3p2pOpts, dms3p2p.PrivateNetwork(protec))
 	}
 
 	addrsFactory, err := makeAddrsFactory(cfg.Addresses)
@@ -227,34 +227,34 @@ func (n *IpfsNode) startOnlineServices(ctx context.Context, routingOption Routin
 	if !cfg.Swarm.DisableRelay {
 		addrsFactory = composeAddrsFactory(addrsFactory, filterRelayAddrs)
 	}
-	libp2pOpts = append(libp2pOpts, libp2p.AddrsFactory(addrsFactory))
+	dms3p2pOpts = append(dms3p2pOpts, dms3p2p.AddrsFactory(addrsFactory))
 
 	connm, err := constructConnMgr(cfg.Swarm.ConnMgr)
 	if err != nil {
 		return err
 	}
-	libp2pOpts = append(libp2pOpts, libp2p.ConnectionManager(connm))
+	dms3p2pOpts = append(dms3p2pOpts, dms3p2p.ConnectionManager(connm))
 
-	libp2pOpts = append(libp2pOpts, makeSmuxTransportOption(mplex))
+	dms3p2pOpts = append(dms3p2pOpts, makeSmuxTransportOption(mplex))
 
 	if !cfg.Swarm.DisableNatPortMap {
-		libp2pOpts = append(libp2pOpts, libp2p.NATPortMap())
+		dms3p2pOpts = append(dms3p2pOpts, dms3p2p.NATPortMap())
 	}
 	if !cfg.Swarm.DisableRelay {
 		var opts []circuit.RelayOpt
 		if cfg.Swarm.EnableRelayHop {
 			opts = append(opts, circuit.OptHop)
 		}
-		libp2pOpts = append(libp2pOpts, libp2p.EnableRelay(opts...))
+		dms3p2pOpts = append(dms3p2pOpts, dms3p2p.EnableRelay(opts...))
 	}
 
-	peerhost, err := hostOption(ctx, n.Identity, n.Peerstore, libp2pOpts...)
+	peerhost, err := hostOption(ctx, n.Identity, n.Peerstore, dms3p2pOpts...)
 
 	if err != nil {
 		return err
 	}
 
-	if err := n.startOnlineServicesWithHost(ctx, peerhost, routingOption, pubsub, ipnsps); err != nil {
+	if err := n.startOnlineServicesWithHost(ctx, peerhost, routingOption, pubsub, dms3nsps); err != nil {
 		return err
 	}
 
@@ -298,7 +298,7 @@ func constructConnMgr(cfg config.ConnMgr) (ifconnmgr.ConnManager, error) {
 	}
 }
 
-func (n *IpfsNode) startLateOnlineServices(ctx context.Context) error {
+func (n *Dms3FsNode) startLateOnlineServices(ctx context.Context) error {
 	cfg, err := n.Repo.Config()
 	if err != nil {
 		return err
@@ -381,7 +381,7 @@ func makeAddrsFactory(cfg config.Addresses) (p2pbhost.AddrsFactory, error) {
 	}, nil
 }
 
-func makeSmuxTransportOption(mplexExp bool) libp2p.Option {
+func makeSmuxTransportOption(mplexExp bool) dms3p2p.Option {
 	const yamuxID = "/yamux/1.0.0"
 	const mplexID = "/mplex/6.7.0"
 
@@ -409,7 +409,7 @@ func makeSmuxTransportOption(mplexExp bool) libp2p.Option {
 		order = strings.Fields(prefs)
 	}
 
-	opts := make([]libp2p.Option, 0, len(order))
+	opts := make([]dms3p2p.Option, 0, len(order))
 	for _, id := range order {
 		tpt, ok := muxers[id]
 		if !ok {
@@ -417,10 +417,10 @@ func makeSmuxTransportOption(mplexExp bool) libp2p.Option {
 			continue
 		}
 		delete(muxers, id)
-		opts = append(opts, libp2p.Muxer(id, tpt))
+		opts = append(opts, dms3p2p.Muxer(id, tpt))
 	}
 
-	return libp2p.ChainOptions(opts...)
+	return dms3p2p.ChainOptions(opts...)
 }
 
 func setupDiscoveryOption(d config.Discovery) DiscoveryOption {
@@ -437,7 +437,7 @@ func setupDiscoveryOption(d config.Discovery) DiscoveryOption {
 
 // HandlePeerFound attempts to connect to peer from `PeerInfo`, if it fails
 // logs a warning log.
-func (n *IpfsNode) HandlePeerFound(p pstore.PeerInfo) {
+func (n *Dms3FsNode) HandlePeerFound(p pstore.PeerInfo) {
 	log.Warning("trying peer info: ", p)
 	ctx, cancel := context.WithTimeout(n.Context(), discoveryConnTimeout)
 	defer cancel()
@@ -448,11 +448,11 @@ func (n *IpfsNode) HandlePeerFound(p pstore.PeerInfo) {
 
 // startOnlineServicesWithHost  is the set of services which need to be
 // initialized with the host and _before_ we start listening.
-func (n *IpfsNode) startOnlineServicesWithHost(ctx context.Context, host p2phost.Host, routingOption RoutingOption, pubsub bool, ipnsps bool) error {
+func (n *Dms3FsNode) startOnlineServicesWithHost(ctx context.Context, host p2phost.Host, routingOption RoutingOption, pubsub bool, dms3nsps bool) error {
 	// setup diagnostics service
 	n.Ping = ping.NewPingService(host)
 
-	if pubsub || ipnsps {
+	if pubsub || dms3nsps {
 		cfg, err := n.Repo.Config()
 		if err != nil {
 			return err
@@ -488,22 +488,22 @@ func (n *IpfsNode) startOnlineServicesWithHost(ctx context.Context, host p2phost
 
 	// TODO: I'm not a fan of type assertions like this but the
 	// `RoutingOption` system doesn't currently provide access to the
-	// IpfsNode.
+	// Dms3FsNode.
 	//
 	// Ideally, we'd do something like:
 	//
 	// 1. Add some fancy method to introspect into tiered routers to extract
 	//    things like the pubsub router or the DHT (complicated, messy,
 	//    probably not worth it).
-	// 2. Pass the IpfsNode into the RoutingOption (would also remove the
+	// 2. Pass the Dms3FsNode into the RoutingOption (would also remove the
 	//    PSRouter case below.
 	// 3. Introduce some kind of service manager? (my personal favorite but
 	//    that requires a fair amount of work).
-	if dht, ok := r.(*dht.IpfsDHT); ok {
+	if dht, ok := r.(*dht.Dms3FsDHT); ok {
 		n.DHT = dht
 	}
 
-	if ipnsps {
+	if dms3nsps {
 		n.PSRouter = psrouter.NewPubsubValueStore(
 			ctx,
 			host,
@@ -516,7 +516,7 @@ func (n *IpfsNode) startOnlineServicesWithHost(ctx context.Context, host p2phost
 			&rhelpers.Compose{
 				ValueStore: &rhelpers.LimitedValueStore{
 					ValueStore: n.PSRouter,
-					Namespaces: []string{"ipns"},
+					Namespaces: []string{"dms3ns"},
 				},
 			},
 			n.Routing,
@@ -527,7 +527,7 @@ func (n *IpfsNode) startOnlineServicesWithHost(ctx context.Context, host p2phost
 	n.PeerHost = rhost.Wrap(host, n.Routing)
 
 	// setup exchange service
-	bitswapNetwork := bsnet.NewFromIpfsHost(n.PeerHost, n.Routing)
+	bitswapNetwork := bsnet.NewFromDms3FsHost(n.PeerHost, n.Routing)
 	n.Exchange = bitswap.New(ctx, bitswapNetwork, n.Blockstore)
 
 	size, err := n.getCacheSize()
@@ -538,18 +538,18 @@ func (n *IpfsNode) startOnlineServicesWithHost(ctx context.Context, host p2phost
 	// setup name system
 	n.Namesys = namesys.NewNameSystem(n.Routing, n.Repo.Datastore(), size)
 
-	// setup ipns republishing
-	return n.setupIpnsRepublisher()
+	// setup dms3ns republishing
+	return n.setupDms3NsRepublisher()
 }
 
 // getCacheSize returns cache life and cache size
-func (n *IpfsNode) getCacheSize() (int, error) {
+func (n *Dms3FsNode) getCacheSize() (int, error) {
 	cfg, err := n.Repo.Config()
 	if err != nil {
 		return 0, err
 	}
 
-	cs := cfg.Ipns.ResolveCacheSize
+	cs := cfg.Dms3Ns.ResolveCacheSize
 	if cs == 0 {
 		cs = 128
 	}
@@ -559,53 +559,53 @@ func (n *IpfsNode) getCacheSize() (int, error) {
 	return cs, nil
 }
 
-func (n *IpfsNode) setupIpnsRepublisher() error {
+func (n *Dms3FsNode) setupDms3NsRepublisher() error {
 	cfg, err := n.Repo.Config()
 	if err != nil {
 		return err
 	}
 
-	n.IpnsRepub = ipnsrp.NewRepublisher(n.Namesys, n.Repo.Datastore(), n.PrivateKey, n.Repo.Keystore())
+	n.Dms3NsRepub = dms3nsrp.NewRepublisher(n.Namesys, n.Repo.Datastore(), n.PrivateKey, n.Repo.Keystore())
 
-	if cfg.Ipns.RepublishPeriod != "" {
-		d, err := time.ParseDuration(cfg.Ipns.RepublishPeriod)
+	if cfg.Dms3Ns.RepublishPeriod != "" {
+		d, err := time.ParseDuration(cfg.Dms3Ns.RepublishPeriod)
 		if err != nil {
-			return fmt.Errorf("failure to parse config setting IPNS.RepublishPeriod: %s", err)
+			return fmt.Errorf("failure to parse config setting DMS3NS.RepublishPeriod: %s", err)
 		}
 
 		if !u.Debug && (d < time.Minute || d > (time.Hour*24)) {
-			return fmt.Errorf("config setting IPNS.RepublishPeriod is not between 1min and 1day: %s", d)
+			return fmt.Errorf("config setting DMS3NS.RepublishPeriod is not between 1min and 1day: %s", d)
 		}
 
-		n.IpnsRepub.Interval = d
+		n.Dms3NsRepub.Interval = d
 	}
 
-	if cfg.Ipns.RecordLifetime != "" {
-		d, err := time.ParseDuration(cfg.Ipns.RepublishPeriod)
+	if cfg.Dms3Ns.RecordLifetime != "" {
+		d, err := time.ParseDuration(cfg.Dms3Ns.RepublishPeriod)
 		if err != nil {
-			return fmt.Errorf("failure to parse config setting IPNS.RecordLifetime: %s", err)
+			return fmt.Errorf("failure to parse config setting DMS3NS.RecordLifetime: %s", err)
 		}
 
-		n.IpnsRepub.RecordLifetime = d
+		n.Dms3NsRepub.RecordLifetime = d
 	}
 
-	n.Process().Go(n.IpnsRepub.Run)
+	n.Process().Go(n.Dms3NsRepub.Run)
 
 	return nil
 }
 
 // Process returns the Process object
-func (n *IpfsNode) Process() goprocess.Process {
+func (n *Dms3FsNode) Process() goprocess.Process {
 	return n.proc
 }
 
 // Close calls Close() on the Process object
-func (n *IpfsNode) Close() error {
+func (n *Dms3FsNode) Close() error {
 	return n.proc.Close()
 }
 
-// Context returns the IpfsNode context
-func (n *IpfsNode) Context() context.Context {
+// Context returns the Dms3FsNode context
+func (n *Dms3FsNode) Context() context.Context {
 	if n.ctx == nil {
 		n.ctx = context.TODO()
 	}
@@ -614,7 +614,7 @@ func (n *IpfsNode) Context() context.Context {
 
 // teardown closes owned children. If any errors occur, this function returns
 // the first error.
-func (n *IpfsNode) teardown() error {
+func (n *Dms3FsNode) teardown() error {
 	log.Debug("core is shutting down...")
 	// owned objects are closed in this teardown to ensure that they're closed
 	// regardless of which constructor was used to add them to the node.
@@ -632,11 +632,11 @@ func (n *IpfsNode) teardown() error {
 		closers = append(closers, n.Exchange)
 	}
 
-	if n.Mounts.Ipfs != nil && !n.Mounts.Ipfs.IsActive() {
-		closers = append(closers, mount.Closer(n.Mounts.Ipfs))
+	if n.Mounts.Dms3Fs != nil && !n.Mounts.Dms3Fs.IsActive() {
+		closers = append(closers, mount.Closer(n.Mounts.Dms3Fs))
 	}
-	if n.Mounts.Ipns != nil && !n.Mounts.Ipns.IsActive() {
-		closers = append(closers, mount.Closer(n.Mounts.Ipns))
+	if n.Mounts.Dms3Ns != nil && !n.Mounts.Dms3Ns.IsActive() {
+		closers = append(closers, mount.Closer(n.Mounts.Dms3Ns))
 	}
 
 	if n.DHT != nil {
@@ -670,21 +670,21 @@ func (n *IpfsNode) teardown() error {
 	return nil
 }
 
-// OnlineMode returns whether or not the IpfsNode is in OnlineMode.
-func (n *IpfsNode) OnlineMode() bool {
+// OnlineMode returns whether or not the Dms3FsNode is in OnlineMode.
+func (n *Dms3FsNode) OnlineMode() bool {
 	return n.mode == onlineMode
 }
 
-// SetLocal will set the IpfsNode to local mode
-func (n *IpfsNode) SetLocal(isLocal bool) {
+// SetLocal will set the Dms3FsNode to local mode
+func (n *Dms3FsNode) SetLocal(isLocal bool) {
 	if isLocal {
 		n.mode = localMode
 	}
 	n.localModeSet = true
 }
 
-// LocalMode returns whether or not the IpfsNode is in LocalMode
-func (n *IpfsNode) LocalMode() bool {
+// LocalMode returns whether or not the Dms3FsNode is in LocalMode
+func (n *Dms3FsNode) LocalMode() bool {
 	if !n.localModeSet {
 		// programmer error should not happen
 		panic("local mode not set")
@@ -692,8 +692,8 @@ func (n *IpfsNode) LocalMode() bool {
 	return n.mode == localMode
 }
 
-// Bootstrap will set and call the IpfsNodes bootstrap function.
-func (n *IpfsNode) Bootstrap(cfg BootstrapConfig) error {
+// Bootstrap will set and call the Dms3FsNodes bootstrap function.
+func (n *Dms3FsNode) Bootstrap(cfg BootstrapConfig) error {
 	// TODO what should return value be when in offlineMode?
 	if n.Routing == nil {
 		return nil
@@ -721,7 +721,7 @@ func (n *IpfsNode) Bootstrap(cfg BootstrapConfig) error {
 	return err
 }
 
-func (n *IpfsNode) loadID() error {
+func (n *Dms3FsNode) loadID() error {
 	if n.Identity != "" {
 		return errors.New("identity already loaded")
 	}
@@ -733,10 +733,10 @@ func (n *IpfsNode) loadID() error {
 
 	cid := cfg.Identity.PeerID
 	if cid == "" {
-		return errors.New("identity was not set in config (was 'ipfs init' run?)")
+		return errors.New("identity was not set in config (was 'dms3fs init' run?)")
 	}
 	if len(cid) == 0 {
-		return errors.New("no peer ID in config! (was 'ipfs init' run?)")
+		return errors.New("no peer ID in config! (was 'dms3fs init' run?)")
 	}
 
 	id, err := peer.IDB58Decode(cid)
@@ -749,7 +749,7 @@ func (n *IpfsNode) loadID() error {
 }
 
 // GetKey will return a key from the Keystore with name `name`.
-func (n *IpfsNode) GetKey(name string) (ic.PrivKey, error) {
+func (n *Dms3FsNode) GetKey(name string) (ic.PrivKey, error) {
 	if name == "self" {
 		return n.PrivateKey, nil
 	} else {
@@ -757,7 +757,7 @@ func (n *IpfsNode) GetKey(name string) (ic.PrivKey, error) {
 	}
 }
 
-func (n *IpfsNode) LoadPrivateKey() error {
+func (n *Dms3FsNode) LoadPrivateKey() error {
 	if n.Identity == "" || n.Peerstore == nil {
 		return errors.New("loaded private key out of order")
 	}
@@ -782,7 +782,7 @@ func (n *IpfsNode) LoadPrivateKey() error {
 	return nil
 }
 
-func (n *IpfsNode) loadBootstrapPeers() ([]pstore.PeerInfo, error) {
+func (n *Dms3FsNode) loadBootstrapPeers() ([]pstore.PeerInfo, error) {
 	cfg, err := n.Repo.Config()
 	if err != nil {
 		return nil, err
@@ -795,7 +795,7 @@ func (n *IpfsNode) loadBootstrapPeers() ([]pstore.PeerInfo, error) {
 	return toPeerInfos(parsed), nil
 }
 
-func (n *IpfsNode) loadFilesRoot() error {
+func (n *Dms3FsNode) loadFilesRoot() error {
 	dsk := ds.NewKey("/local/filesroot")
 	pf := func(ctx context.Context, c *cid.Cid) error {
 		return n.Repo.Datastore().Put(dsk, c.Bytes())
@@ -842,8 +842,8 @@ func (n *IpfsNode) loadFilesRoot() error {
 }
 
 // SetupOfflineRouting instantiates a routing system in offline mode. This is
-// primarily used for offline ipns modifications.
-func (n *IpfsNode) SetupOfflineRouting() error {
+// primarily used for offline dms3ns modifications.
+func (n *Dms3FsNode) SetupOfflineRouting() error {
 	if n.Routing != nil {
 		// Routing was already set up
 		return nil
@@ -906,18 +906,18 @@ type ConstructPeerHostOpts struct {
 	ConnectionManager ifconnmgr.ConnManager
 }
 
-type HostOption func(ctx context.Context, id peer.ID, ps pstore.Peerstore, options ...libp2p.Option) (p2phost.Host, error)
+type HostOption func(ctx context.Context, id peer.ID, ps pstore.Peerstore, options ...dms3p2p.Option) (p2phost.Host, error)
 
 var DefaultHostOption HostOption = constructPeerHost
 
 // isolates the complex initialization steps
-func constructPeerHost(ctx context.Context, id peer.ID, ps pstore.Peerstore, options ...libp2p.Option) (p2phost.Host, error) {
+func constructPeerHost(ctx context.Context, id peer.ID, ps pstore.Peerstore, options ...dms3p2p.Option) (p2phost.Host, error) {
 	pkey := ps.PrivKey(id)
 	if pkey == nil {
 		return nil, fmt.Errorf("missing private key for node ID: %s", id.Pretty())
 	}
-	options = append([]libp2p.Option{libp2p.Identity(pkey), libp2p.Peerstore(ps)}, options...)
-	return libp2p.New(ctx, options...)
+	options = append([]dms3p2p.Option{dms3p2p.Identity(pkey), dms3p2p.Peerstore(ps)}, options...)
+	return dms3p2p.New(ctx, options...)
 }
 
 func filterRelayAddrs(addrs []ma.Multiaddr) []ma.Multiaddr {
@@ -959,7 +959,7 @@ func startListening(host p2phost.Host, cfg *config.Config) error {
 	return nil
 }
 
-func constructDHTRouting(ctx context.Context, host p2phost.Host, dstore ds.Batching, validator record.Validator) (routing.IpfsRouting, error) {
+func constructDHTRouting(ctx context.Context, host p2phost.Host, dstore ds.Batching, validator record.Validator) (routing.Dms3FsRouting, error) {
 	return dht.New(
 		ctx, host,
 		dhtopts.Datastore(dstore),
@@ -967,7 +967,7 @@ func constructDHTRouting(ctx context.Context, host p2phost.Host, dstore ds.Batch
 	)
 }
 
-func constructClientDHTRouting(ctx context.Context, host p2phost.Host, dstore ds.Batching, validator record.Validator) (routing.IpfsRouting, error) {
+func constructClientDHTRouting(ctx context.Context, host p2phost.Host, dstore ds.Batching, validator record.Validator) (routing.Dms3FsRouting, error) {
 	return dht.New(
 		ctx, host,
 		dhtopts.Client(true),
@@ -976,7 +976,7 @@ func constructClientDHTRouting(ctx context.Context, host p2phost.Host, dstore ds
 	)
 }
 
-type RoutingOption func(context.Context, p2phost.Host, ds.Batching, record.Validator) (routing.IpfsRouting, error)
+type RoutingOption func(context.Context, p2phost.Host, ds.Batching, record.Validator) (routing.Dms3FsRouting, error)
 
 type DiscoveryOption func(context.Context, p2phost.Host) (discovery.Service, error)
 

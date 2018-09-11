@@ -5,12 +5,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ipfs/go-ipfs/core"
-	"github.com/ipfs/go-ipfs/core/mock"
-	"gx/ipfs/QmWAzSEoqZ6xU6pu8yL8e5WaMb7wtbfbhhN4p1DknUPtr3/go-block-format"
+	"github.com/dms3-fs/go-block-format"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	"github.com/dms3-fs/go-dms3-fs/core/mock"
 
-	mocknet "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/net/mock"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	mocknet "github.com/dms3-p2p/go-p2p/p2p/net/mock"
 )
 
 func TestBitswapWithoutRouting(t *testing.T) {
@@ -21,7 +21,7 @@ func TestBitswapWithoutRouting(t *testing.T) {
 	// create network
 	mn := mocknet.New(ctx)
 
-	var nodes []*core.IpfsNode
+	var nodes []*core.Dms3FsNode
 	for i := 0; i < numPeers; i++ {
 		n, err := core.NewNode(ctx, &core.BuildCfg{
 			Online:  true,

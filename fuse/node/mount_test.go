@@ -11,13 +11,13 @@ import (
 
 	"context"
 
-	core "github.com/ipfs/go-ipfs/core"
-	ipns "github.com/ipfs/go-ipfs/fuse/ipns"
-	mount "github.com/ipfs/go-ipfs/fuse/mount"
-	namesys "github.com/ipfs/go-ipfs/namesys"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	dms3ns "github.com/dms3-fs/go-dms3-fs/fuse/dms3ns"
+	mount "github.com/dms3-fs/go-dms3-fs/fuse/mount"
+	namesys "github.com/dms3-fs/go-dms3-fs/namesys"
 
-	ci "gx/ipfs/QmRNhSdqzMcuRxX9A1egBeQ3BhDTguDV5HPwi8wRykkPU8/go-testutil/ci"
-	offroute "gx/ipfs/Qmd45r5jHr1PKMNQqifnbZy1ZQwHdtXUDJFamUEvUJE544/go-ipfs-routing/offline"
+	offroute "github.com/dms3-fs/go-fs-routing/offline"
+	ci "github.com/dms3-p2p/go-testutil/ci"
 )
 
 func maybeSkipFuseTests(t *testing.T) {
@@ -55,7 +55,7 @@ func TestExternalUnmount(t *testing.T) {
 	node.Routing = offroute.NewOfflineRouter(node.Repo.Datastore(), node.RecordValidator)
 	node.Namesys = namesys.NewNameSystem(node.Routing, node.Repo.Datastore(), 0)
 
-	err = ipns.InitializeKeyspace(node, node.PrivateKey)
+	err = dms3ns.InitializeKeyspace(node, node.PrivateKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,19 +66,19 @@ func TestExternalUnmount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ipfsDir := dir + "/ipfs"
-	ipnsDir := dir + "/ipns"
-	mkdir(t, ipfsDir)
-	mkdir(t, ipnsDir)
+	dms3fsDir := dir + "/dms3fs"
+	dms3nsDir := dir + "/dms3ns"
+	mkdir(t, dms3fsDir)
+	mkdir(t, dms3nsDir)
 
-	err = Mount(node, ipfsDir, ipnsDir)
+	err = Mount(node, dms3fsDir, dms3nsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Run shell command to externally unmount the directory
 	cmd := "fusermount"
-	args := []string{"-u", ipnsDir}
+	args := []string{"-u", dms3nsDir}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
 		t.Fatal(err)
 	}
@@ -86,14 +86,14 @@ func TestExternalUnmount(t *testing.T) {
 	// TODO(noffle): it takes a moment for the goroutine that's running fs.Serve to be notified and do its cleanup.
 	time.Sleep(time.Millisecond * 100)
 
-	// Attempt to unmount IPNS; check that it was already unmounted.
-	err = node.Mounts.Ipns.Unmount()
+	// Attempt to unmount DMS3NS; check that it was already unmounted.
+	err = node.Mounts.Dms3Ns.Unmount()
 	if err != mount.ErrNotMounted {
 		t.Fatal("Unmount should have failed")
 	}
 
-	// Attempt to unmount IPFS; it should unmount successfully.
-	err = node.Mounts.Ipfs.Unmount()
+	// Attempt to unmount DMS3FS; it should unmount successfully.
+	err = node.Mounts.Dms3Fs.Unmount()
 	if err != nil {
 		t.Fatal(err)
 	}

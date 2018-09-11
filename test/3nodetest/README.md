@@ -1,4 +1,4 @@
-this is an ipfs integration test
+this is an dms3fs integration test
 
 **requirements**
 
@@ -6,10 +6,10 @@ this is an ipfs integration test
 * fig
 * Go
 
-* ipfs image named "zaqwsx_ipfs-test-img"
+* dms3fs image named "zaqwsx_dms3fs-test-img"
 
 ```
 make setup
-fig build 
+fig build
 fig up
 ```

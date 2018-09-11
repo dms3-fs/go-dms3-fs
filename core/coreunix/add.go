@@ -10,22 +10,22 @@ import (
 	"path/filepath"
 	"strconv"
 
-	core "github.com/ipfs/go-ipfs/core"
-	"github.com/ipfs/go-ipfs/pin"
-	unixfs "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	balanced "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/importer/balanced"
-	ihelper "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/importer/helpers"
-	trickle "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/importer/trickle"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	"github.com/dms3-fs/go-dms3-fs/pin"
+	dag "github.com/dms3-fs/go-merkledag"
+	unixfs "github.com/dms3-fs/go-unixfs"
+	balanced "github.com/dms3-fs/go-unixfs/importer/balanced"
+	ihelper "github.com/dms3-fs/go-unixfs/importer/helpers"
+	trickle "github.com/dms3-fs/go-unixfs/importer/trickle"
 
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	files "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit/files"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	posinfo "gx/ipfs/QmXD4grfThQ4LwVoEEfe4dgR7ukmbV9TppM5Q4SPowp7hU/go-ipfs-posinfo"
-	chunker "gx/ipfs/QmXzBbJo2sLf3uwjNTeoWYiJV7CjAhkiA4twtLvwJSSNdK/go-ipfs-chunker"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	bstore "gx/ipfs/QmcmpX42gtDv1fz24kau4wjS9hfwWj5VexWBKgGnWzsyag/go-ipfs-blockstore"
-	mfs "gx/ipfs/QmdghKsSDa2AD1kC4qYRnVYWqZecdSBRZjeXRdhMYYhafj/go-mfs"
+	cid "github.com/dms3-fs/go-cid"
+	bstore "github.com/dms3-fs/go-fs-blockstore"
+	chunker "github.com/dms3-fs/go-fs-chunker"
+	files "github.com/dms3-fs/go-fs-cmdkit/files"
+	posinfo "github.com/dms3-fs/go-fs-posinfo"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	logging "github.com/dms3-fs/go-log"
+	mfs "github.com/dms3-fs/go-mfs"
 )
 
 var log = logging.Logger("coreunix")
@@ -54,7 +54,7 @@ type AddedObject struct {
 }
 
 // NewAdder Returns a new Adder used for a file add operation.
-func NewAdder(ctx context.Context, p pin.Pinner, bs bstore.GCBlockstore, ds ipld.DAGService) (*Adder, error) {
+func NewAdder(ctx context.Context, p pin.Pinner, bs bstore.GCBlockstore, ds dms3ld.DAGService) (*Adder, error) {
 	return &Adder{
 		ctx:        ctx,
 		pinning:    p,
@@ -74,7 +74,7 @@ type Adder struct {
 	ctx        context.Context
 	pinning    pin.Pinner
 	blockstore bstore.GCBlockstore
-	dagService ipld.DAGService
+	dagService dms3ld.DAGService
 	Out        chan interface{}
 	Progress   bool
 	Hidden     bool
@@ -85,7 +85,7 @@ type Adder struct {
 	Wrap       bool
 	NoCopy     bool
 	Chunker    string
-	root       ipld.Node
+	root       dms3ld.Node
 	mroot      *mfs.Root
 	unlocker   bstore.Unlocker
 	tempRoot   *cid.Cid
@@ -113,7 +113,7 @@ func (adder *Adder) SetMfsRoot(r *mfs.Root) {
 }
 
 // Constructs a node from reader's data, and adds it. Doesn't pin.
-func (adder *Adder) add(reader io.Reader) (ipld.Node, error) {
+func (adder *Adder) add(reader io.Reader) (dms3ld.Node, error) {
 	chnk, err := chunker.FromString(reader, adder.Chunker)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (adder *Adder) add(reader io.Reader) (ipld.Node, error) {
 }
 
 // RootNode returns the root node of the Added.
-func (adder *Adder) RootNode() (ipld.Node, error) {
+func (adder *Adder) RootNode() (dms3ld.Node, error) {
 	// for memoizing
 	if adder.root != nil {
 		return adder.root, nil
@@ -195,7 +195,7 @@ func (adder *Adder) PinRoot() error {
 }
 
 // Finalize flushes the mfs root directory and returns the mfs root node.
-func (adder *Adder) Finalize() (ipld.Node, error) {
+func (adder *Adder) Finalize() (dms3ld.Node, error) {
 	mr, err := adder.mfsRoot()
 	if err != nil {
 		return nil, err
@@ -279,12 +279,12 @@ func (adder *Adder) outputDirs(path string, fsn mfs.FSNode) error {
 // Add builds a merkledag node from a reader, adds it to the blockstore,
 // and returns the key representing that node.
 // If you want to pin it, use NewAdder() and Adder.PinRoot().
-func Add(n *core.IpfsNode, r io.Reader) (string, error) {
+func Add(n *core.Dms3FsNode, r io.Reader) (string, error) {
 	return AddWithContext(n.Context(), n, r)
 }
 
 // AddWithContext does the same as Add, but with a custom context.
-func AddWithContext(ctx context.Context, n *core.IpfsNode, r io.Reader) (string, error) {
+func AddWithContext(ctx context.Context, n *core.Dms3FsNode, r io.Reader) (string, error) {
 	defer n.Blockstore.PinLock().Unlock()
 
 	fileAdder, err := NewAdder(ctx, n.Pinning, n.Blockstore, n.DAG)
@@ -301,7 +301,7 @@ func AddWithContext(ctx context.Context, n *core.IpfsNode, r io.Reader) (string,
 }
 
 // AddR recursively adds files in |path|.
-func AddR(n *core.IpfsNode, root string) (key string, err error) {
+func AddR(n *core.Dms3FsNode, root string) (key string, err error) {
 	defer n.Blockstore.PinLock().Unlock()
 
 	stat, err := os.Lstat(root)
@@ -337,7 +337,7 @@ func AddR(n *core.IpfsNode, root string) (key string, err error) {
 // to preserve the filename.
 // Returns the path of the added file ("<dir hash>/filename"), the DAG node of
 // the directory, and and error if any.
-func AddWrapped(n *core.IpfsNode, r io.Reader, filename string) (string, ipld.Node, error) {
+func AddWrapped(n *core.Dms3FsNode, r io.Reader, filename string) (string, dms3ld.Node, error) {
 	file := files.NewReaderFile(filename, filename, ioutil.NopCloser(r), nil)
 	fileAdder, err := NewAdder(n.Context(), n.Pinning, n.Blockstore, n.DAG)
 	if err != nil {
@@ -361,7 +361,7 @@ func AddWrapped(n *core.IpfsNode, r io.Reader, filename string) (string, ipld.No
 	return gopath.Join(c.String(), filename), dagnode, nil
 }
 
-func (adder *Adder) addNode(node ipld.Node, path string) error {
+func (adder *Adder) addNode(node dms3ld.Node, path string) error {
 	// patch it into the root
 	if path == "" {
 		path = node.Cid().String()
@@ -527,7 +527,7 @@ func (adder *Adder) maybePauseForGC() error {
 }
 
 // outputDagnode sends dagnode info over the output channel
-func outputDagnode(out chan interface{}, name string, dn ipld.Node) error {
+func outputDagnode(out chan interface{}, name string, dn dms3ld.Node) error {
 	if out == nil {
 		return nil
 	}
@@ -547,7 +547,7 @@ func outputDagnode(out chan interface{}, name string, dn ipld.Node) error {
 }
 
 // from core/commands/object.go
-func getOutput(dagnode ipld.Node) (*Object, error) {
+func getOutput(dagnode dms3ld.Node) (*Object, error) {
 	c := dagnode.Cid()
 	s, err := dagnode.Size()
 	if err != nil {

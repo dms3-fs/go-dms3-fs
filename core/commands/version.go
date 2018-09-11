@@ -6,12 +6,12 @@ import (
 	"runtime"
 	"strings"
 
-	version "github.com/ipfs/go-ipfs"
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
+	version "github.com/dms3-fs/go-dms3-fs"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	fsrepo "github.com/dms3-fs/go-dms3-fs/repo/fsrepo"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
 )
 
 type VersionOutput struct {
@@ -24,8 +24,8 @@ type VersionOutput struct {
 
 var VersionCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline:          "Show ipfs version information.",
-		ShortDescription: "Returns the current version of ipfs and exits.",
+		Tagline:          "Show dms3fs version information.",
+		ShortDescription: "Returns the current version of dms3fs and exits.",
 	},
 
 	Options: []cmdkit.Option{
@@ -86,13 +86,13 @@ var VersionCmd = &cmds.Command{
 				return nil, err
 			}
 			if all {
-				out := fmt.Sprintf("go-ipfs version: %s-%s\n"+
+				out := fmt.Sprintf("go-dms3-fs version: %s-%s\n"+
 					"Repo version: %s\nSystem version: %s\nGolang version: %s\n",
 					version.Version, version.Commit, version.Repo, version.System, version.Golang)
 				return strings.NewReader(out), nil
 			}
 
-			return strings.NewReader(fmt.Sprintf("ipfs version %s%s\n", version.Version, commitTxt)), nil
+			return strings.NewReader(fmt.Sprintf("dms3-fs version %s%s\n", version.Version, commitTxt)), nil
 		},
 	},
 	Type: VersionOutput{},

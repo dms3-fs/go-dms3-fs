@@ -7,17 +7,17 @@ import (
 	"sort"
 	"text/tabwriter"
 
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	core "github.com/ipfs/go-ipfs/core"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	unixfs "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	unixfspb "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/pb"
-	merkledag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
-	resolver "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	merkledag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
+	resolver "github.com/dms3-fs/go-path/resolver"
+	unixfs "github.com/dms3-fs/go-unixfs"
+	uio "github.com/dms3-fs/go-unixfs/io"
+	unixfspb "github.com/dms3-fs/go-unixfs/pb"
 )
 
 type LsLink struct {
@@ -42,39 +42,39 @@ var LsCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "List directory contents for Unix filesystem objects.",
 		ShortDescription: `
-Displays the contents of an IPFS or IPNS object(s) at the given path.
+Displays the contents of an DMS3FS or DMS3NS object(s) at the given path.
 
 The JSON output contains size information. For files, the child size
 is the total size of the file contents. For directories, the child
-size is the IPFS link size.
+size is the DMS3FS link size.
 
 This functionality is deprecated, and will be removed in future versions. If
-possible, please use 'ipfs ls' instead.
+possible, please use 'dms3fs ls' instead.
 `,
 		LongDescription: `
-Displays the contents of an IPFS or IPNS object(s) at the given path.
+Displays the contents of an DMS3FS or DMS3NS object(s) at the given path.
 
 The JSON output contains size information. For files, the child size
 is the total size of the file contents. For directories, the child
-size is the IPFS link size.
+size is the DMS3FS link size.
 
 The path can be a prefixless ref; in this case, we assume it to be an
-/ipfs ref and not /ipns.
+/dms3fs ref and not /dms3ns.
 
 Example:
 
-    > ipfs file ls QmW2WQi7j6c7UgJTarActp7tDNikE4B2qXtFCfLPdsgaTQ
+    > dms3fs file ls QmW2WQi7j6c7UgJTarActp7tDNikE4B2qXtFCfLPdsgaTQ
     cat.jpg
-    > ipfs file ls /ipfs/QmW2WQi7j6c7UgJTarActp7tDNikE4B2qXtFCfLPdsgaTQ
+    > dms3fs file ls /dms3fs/QmW2WQi7j6c7UgJTarActp7tDNikE4B2qXtFCfLPdsgaTQ
     cat.jpg
 
 This functionality is deprecated, and will be removed in future versions. If
-possible, please use 'ipfs ls' instead.
+possible, please use 'dms3fs ls' instead.
 `,
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("ipfs-path", true, true, "The path to the IPFS object(s) to list links from.").EnableStdin(),
+		cmdkit.StringArg("dms3fs-path", true, true, "The path to the DMS3FS object(s) to list links from.").EnableStdin(),
 	},
 	Run: func(req cmds.Request, res cmds.Response) {
 		node, err := req.InvocContext().GetNode()

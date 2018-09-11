@@ -7,38 +7,38 @@ import (
 	"strings"
 	"time"
 
-	core "github.com/ipfs/go-ipfs/core"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	caopts "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
-	keystore "github.com/ipfs/go-ipfs/keystore"
-	namesys "github.com/ipfs/go-ipfs/namesys"
-	nsopts "github.com/ipfs/go-ipfs/namesys/opts"
-	ipath "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	caopts "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
+	keystore "github.com/dms3-fs/go-dms3-fs/keystore"
+	namesys "github.com/dms3-fs/go-dms3-fs/namesys"
+	nsopts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
+	ipath "github.com/dms3-fs/go-path"
 
-	crypto "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	offline "gx/ipfs/Qmd45r5jHr1PKMNQqifnbZy1ZQwHdtXUDJFamUEvUJE544/go-ipfs-routing/offline"
+	offline "github.com/dms3-fs/go-fs-routing/offline"
+	crypto "github.com/dms3-p2p/go-p2p-crypto"
+	peer "github.com/dms3-p2p/go-p2p-peer"
 )
 
 type NameAPI CoreAPI
 
-type ipnsEntry struct {
+type dms3nsEntry struct {
 	name  string
 	value coreiface.Path
 }
 
-// Name returns the ipnsEntry name.
-func (e *ipnsEntry) Name() string {
+// Name returns the dms3nsEntry name.
+func (e *dms3nsEntry) Name() string {
 	return e.name
 }
 
-// Value returns the ipnsEntry value.
-func (e *ipnsEntry) Value() coreiface.Path {
+// Value returns the dms3nsEntry value.
+func (e *dms3nsEntry) Value() coreiface.Path {
 	return e.value
 }
 
-// Publish announces new IPNS name and returns the new IPNS entry.
-func (api *NameAPI) Publish(ctx context.Context, p coreiface.Path, opts ...caopts.NamePublishOption) (coreiface.IpnsEntry, error) {
+// Publish announces new DMS3NS name and returns the new DMS3NS entry.
+func (api *NameAPI) Publish(ctx context.Context, p coreiface.Path, opts ...caopts.NamePublishOption) (coreiface.Dms3NsEntry, error) {
 	options, err := caopts.NamePublishOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -52,8 +52,8 @@ func (api *NameAPI) Publish(ctx context.Context, p coreiface.Path, opts ...caopt
 		}
 	}
 
-	if n.Mounts.Ipns != nil && n.Mounts.Ipns.IsActive() {
-		return nil, errors.New("cannot manually publish while IPNS is mounted")
+	if n.Mounts.Dms3Ns != nil && n.Mounts.Dms3Ns.IsActive() {
+		return nil, errors.New("cannot manually publish while DMS3NS is mounted")
 	}
 
 	pth, err := ipath.ParsePath(p.String())
@@ -77,7 +77,7 @@ func (api *NameAPI) Publish(ctx context.Context, p coreiface.Path, opts ...caopt
 		return nil, err
 	}
 
-	return &ipnsEntry{
+	return &dms3nsEntry{
 		name:  pid.Pretty(),
 		value: p,
 	}, nil
@@ -108,15 +108,15 @@ func (api *NameAPI) Resolve(ctx context.Context, name string, opts ...caopts.Nam
 
 	if options.Local {
 		offroute := offline.NewOfflineRouter(n.Repo.Datastore(), n.RecordValidator)
-		resolver = namesys.NewIpnsResolver(offroute)
+		resolver = namesys.NewDms3NsResolver(offroute)
 	}
 
 	if !options.Cache {
 		resolver = namesys.NewNameSystem(n.Routing, n.Repo.Datastore(), 0)
 	}
 
-	if !strings.HasPrefix(name, "/ipns/") {
-		name = "/ipns/" + name
+	if !strings.HasPrefix(name, "/dms3ns/") {
+		name = "/dms3ns/" + name
 	}
 
 	var ropts []nsopts.ResolveOpt
@@ -132,7 +132,7 @@ func (api *NameAPI) Resolve(ctx context.Context, name string, opts ...caopts.Nam
 	return coreiface.ParsePath(output.String())
 }
 
-func keylookup(n *core.IpfsNode, k string) (crypto.PrivKey, error) {
+func keylookup(n *core.Dms3FsNode, k string) (crypto.PrivKey, error) {
 	res, err := n.GetKey(k)
 	if res != nil {
 		return res, nil

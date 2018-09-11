@@ -9,38 +9,38 @@ import (
 	"syscall"
 	"time"
 
-	filestore "github.com/ipfs/go-ipfs/filestore"
-	pin "github.com/ipfs/go-ipfs/pin"
-	repo "github.com/ipfs/go-ipfs/repo"
-	cidv0v1 "github.com/ipfs/go-ipfs/thirdparty/cidv0v1"
-	"github.com/ipfs/go-ipfs/thirdparty/verifbs"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	bserv "gx/ipfs/QmbSB9Uh3wVgmiCb1fAb8zuC3qAE6un4kd1jvatUurfAmB/go-blockservice"
-	resolver "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
+	bserv "github.com/dms3-fs/go-blockservice"
+	filestore "github.com/dms3-fs/go-dms3-fs/filestore"
+	pin "github.com/dms3-fs/go-dms3-fs/pin"
+	repo "github.com/dms3-fs/go-dms3-fs/repo"
+	cidv0v1 "github.com/dms3-fs/go-dms3-fs/thirdparty/cidv0v1"
+	"github.com/dms3-fs/go-dms3-fs/thirdparty/verifbs"
+	dag "github.com/dms3-fs/go-merkledag"
+	resolver "github.com/dms3-fs/go-path/resolver"
+	uio "github.com/dms3-fs/go-unixfs/io"
 
-	ipns "gx/ipfs/QmNqBhXpBKa5jcjoUZHfxDgAFxtqK3rDA5jtW811GBvVob/go-ipns"
-	ci "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	libp2p "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	p2phost "gx/ipfs/QmRRCrNRs4qxotXx7WJT6SpCvSNEhXvyBcVjXY2K71pcjE/go-libp2p-host"
-	goprocessctx "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/context"
-	cfg "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	retry "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/retrystore"
-	dsync "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/sync"
-	offline "gx/ipfs/QmZxjqR9Qgompju73kakSoUj3rbVndAzky3oCDiBNCxPs1/go-ipfs-exchange-offline"
-	bstore "gx/ipfs/QmcmpX42gtDv1fz24kau4wjS9hfwWj5VexWBKgGnWzsyag/go-ipfs-blockstore"
-	record "gx/ipfs/QmdHb9aBELnQKTVhvvA3hsQbRgUAwsWUzBP2vZ6Y5FBYvE/go-libp2p-record"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
-	metrics "gx/ipfs/QmekzFM3hPZjTjUFGTABdQkEnQ3PTiMstY198PwSFr5w1Q/go-metrics-interface"
+	ds "github.com/dms3-fs/go-datastore"
+	retry "github.com/dms3-fs/go-datastore/retrystore"
+	dsync "github.com/dms3-fs/go-datastore/sync"
+	bstore "github.com/dms3-fs/go-fs-blockstore"
+	cfg "github.com/dms3-fs/go-fs-config"
+	offline "github.com/dms3-fs/go-fs-exchange-offline"
+	dms3ns "github.com/dms3-fs/go-dms3ns"
+	metrics "github.com/dms3-fs/go-metrics-interface"
+	goprocessctx "github.com/jbenet/goprocess/context"
+	dms3p2p "github.com/dms3-p2p/go-p2p"
+	ci "github.com/dms3-p2p/go-p2p-crypto"
+	p2phost "github.com/dms3-p2p/go-p2p-host"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	record "github.com/dms3-p2p/go-p2p-record"
 )
 
 type BuildCfg struct {
 	// If online is set, the node will have networking enabled
 	Online bool
 
-	// ExtraOpts is a map of extra options used to configure the ipfs nodes creation
+	// ExtraOpts is a map of extra options used to configure the dms3fs nodes creation
 	ExtraOpts map[string]bool
 
 	// If permanent then node should run more expensive processes
@@ -115,7 +115,7 @@ func defaultRepo(dstore repo.Datastore) (repo.Repo, error) {
 	}
 
 	c.Bootstrap = cfg.DefaultBootstrapAddresses
-	c.Addresses.Swarm = []string{"/ip4/0.0.0.0/tcp/4001"}
+	c.Addresses.Swarm = []string{"/ip4/0.0.0.0/tcp/4101"}
 	c.Identity.PeerID = pid.Pretty()
 	c.Identity.PrivKey = base64.StdEncoding.EncodeToString(privkeyb)
 
@@ -125,8 +125,8 @@ func defaultRepo(dstore repo.Datastore) (repo.Repo, error) {
 	}, nil
 }
 
-// NewNode constructs and returns an IpfsNode using the given cfg.
-func NewNode(ctx context.Context, cfg *BuildCfg) (*IpfsNode, error) {
+// NewNode constructs and returns an Dms3FsNode using the given cfg.
+func NewNode(ctx context.Context, cfg *BuildCfg) (*Dms3FsNode, error) {
 	if cfg == nil {
 		cfg = new(BuildCfg)
 	}
@@ -136,9 +136,9 @@ func NewNode(ctx context.Context, cfg *BuildCfg) (*IpfsNode, error) {
 		return nil, err
 	}
 
-	ctx = metrics.CtxScope(ctx, "ipfs")
+	ctx = metrics.CtxScope(ctx, "dms3fs")
 
-	n := &IpfsNode{
+	n := &Dms3FsNode{
 		mode:      offlineMode,
 		Repo:      cfg.Repo,
 		ctx:       ctx,
@@ -147,7 +147,7 @@ func NewNode(ctx context.Context, cfg *BuildCfg) (*IpfsNode, error) {
 
 	n.RecordValidator = record.NamespacedValidator{
 		"pk":   record.PublicKeyValidator{},
-		"ipns": ipns.Validator{KeyBook: n.Peerstore},
+		"dms3ns": dms3ns.Validator{KeyBook: n.Peerstore},
 	}
 
 	if cfg.Online {
@@ -174,7 +174,7 @@ func isTooManyFDError(err error) bool {
 	return false
 }
 
-func setupNode(ctx context.Context, n *IpfsNode, cfg *BuildCfg) error {
+func setupNode(ctx context.Context, n *Dms3FsNode, cfg *BuildCfg) error {
 	// setup local peer ID (private key is loaded in online setup)
 	if err := n.loadID(); err != nil {
 		return err
@@ -237,16 +237,16 @@ func setupNode(ctx context.Context, n *IpfsNode, cfg *BuildCfg) error {
 	hostOption := cfg.Host
 	if cfg.DisableEncryptedConnections {
 		innerHostOption := hostOption
-		hostOption = func(ctx context.Context, id peer.ID, ps pstore.Peerstore, options ...libp2p.Option) (p2phost.Host, error) {
-			return innerHostOption(ctx, id, ps, append(options, libp2p.NoSecurity)...)
+		hostOption = func(ctx context.Context, id peer.ID, ps pstore.Peerstore, options ...dms3p2p.Option) (p2phost.Host, error) {
+			return innerHostOption(ctx, id, ps, append(options, dms3p2p.NoSecurity)...)
 		}
-		log.Warningf(`Your IPFS node has been configured to run WITHOUT ENCRYPTED CONNECTIONS.
+		log.Warningf(`Your DMS3FS node has been configured to run WITHOUT ENCRYPTED CONNECTIONS.
 		You will not be able to connect to any nodes configured to use encrypted connections`)
 	}
 
 	if cfg.Online {
 		do := setupDiscoveryOption(rcfg.Discovery)
-		if err := n.startOnlineServices(ctx, cfg.Routing, hostOption, do, cfg.getOpt("pubsub"), cfg.getOpt("ipnsps"), cfg.getOpt("mplex")); err != nil {
+		if err := n.startOnlineServices(ctx, cfg.Routing, hostOption, do, cfg.getOpt("pubsub"), cfg.getOpt("dms3nsps"), cfg.getOpt("mplex")); err != nil {
 			return err
 		}
 	} else {

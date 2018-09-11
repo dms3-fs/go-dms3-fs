@@ -5,11 +5,11 @@ import (
 	"net"
 	"net/http"
 
-	version "github.com/ipfs/go-ipfs"
-	core "github.com/ipfs/go-ipfs/core"
-	coreapi "github.com/ipfs/go-ipfs/core/coreapi"
+	version "github.com/dms3-fs/go-dms3-fs"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	coreapi "github.com/dms3-fs/go-dms3-fs/core/coreapi"
 
-	id "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/protocol/identify"
+	id "github.com/dms3-p2p/go-p2p/p2p/protocol/identify"
 )
 
 type GatewayConfig struct {
@@ -19,7 +19,7 @@ type GatewayConfig struct {
 }
 
 func GatewayOption(writable bool, paths ...string) ServeOption {
-	return func(n *core.IpfsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
+	return func(n *core.Dms3FsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
 		cfg, err := n.Repo.Config()
 		if err != nil {
 			return nil, err
@@ -39,7 +39,7 @@ func GatewayOption(writable bool, paths ...string) ServeOption {
 }
 
 func VersionOption() ServeOption {
-	return func(_ *core.IpfsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
+	return func(_ *core.Dms3FsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
 		mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Commit: %s\n", version.CurrentCommit)
 			fmt.Fprintf(w, "Client Version: %s\n", id.ClientVersion)

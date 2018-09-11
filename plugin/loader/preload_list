@@ -3,4 +3,4 @@
 #
 # name             go-path                  number of the sub-plugin
 
-ipldgit github.com/ipfs/go-ipfs/plugin/plugins/git 0
+dms3ldgit github.com/dms3-fs/go-dms3-fs/plugin/plugins/git 0

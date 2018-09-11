@@ -1,7 +1,7 @@
 # Datastore Configuration Options
 
 This document describes the different possible values for the `Datastore.Spec`
-field in the ipfs configuration file.
+field in the dms3fs configuration file.
 
 ## flatfs
 Stores each key value pair as a file on the filesystem.
@@ -76,4 +76,3 @@ This datastore is a wrapper that adds metrics tracking to any datastore.
 	"child": { datastore being wrapped }
 }
 ```
-

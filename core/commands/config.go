@@ -11,13 +11,13 @@ import (
 	"os/exec"
 	"strings"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	repo "github.com/ipfs/go-ipfs/repo"
-	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	repo "github.com/dms3-fs/go-dms3-fs/repo"
+	fsrepo "github.com/dms3-fs/go-dms3-fs/repo/fsrepo"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 type ConfigField struct {
@@ -27,25 +27,25 @@ type ConfigField struct {
 
 var ConfigCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Get and set ipfs config values.",
+		Tagline: "Get and set dms3fs config values.",
 		ShortDescription: `
-'ipfs config' controls configuration variables. It works like 'git config'.
-The configuration values are stored in a config file inside your ipfs
+'dms3fs config' controls configuration variables. It works like 'git config'.
+The configuration values are stored in a config file inside your dms3fs
 repository.`,
 		LongDescription: `
-'ipfs config' controls configuration variables. It works
+'dms3fs config' controls configuration variables. It works
 much like 'git config'. The configuration values are stored in a config
-file inside your IPFS repository.
+file inside your DMS3FS repository.
 
 Examples:
 
 Get the value of the 'Datastore.Path' key:
 
-  $ ipfs config Datastore.Path
+  $ dms3fs config Datastore.Path
 
 Set the value of the 'Datastore.Path' key:
 
-  $ ipfs config Datastore.Path ~/.ipfs/datastore
+  $ dms3fs config Datastore.Path ~/.dms3-fs/datastore
 `,
 	},
 
@@ -253,7 +253,7 @@ var configEditCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Open the config file for editing in $EDITOR.",
 		ShortDescription: `
-To use 'ipfs config edit', you must have the $EDITOR environment
+To use 'dms3fs config edit', you must have the $EDITOR environment
 variable set to your preferred text editor.
 `,
 	},

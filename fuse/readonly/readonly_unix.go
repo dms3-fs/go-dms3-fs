@@ -10,40 +10,40 @@ import (
 	"os"
 	"syscall"
 
-	core "github.com/ipfs/go-ipfs/core"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	ftpb "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/pb"
-	mdag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	mdag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
+	uio "github.com/dms3-fs/go-unixfs/io"
+	ftpb "github.com/dms3-fs/go-unixfs/pb"
 
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	fuse "gx/ipfs/QmSJBsmLP1XMjv8hxYg2rUMdPDB7YUpyBo9idjrJ6Cmq6F/fuse"
-	fs "gx/ipfs/QmSJBsmLP1XMjv8hxYg2rUMdPDB7YUpyBo9idjrJ6Cmq6F/fuse/fs"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	lgbl "gx/ipfs/QmZ4zF1mBrt8C2mSCM4ZYE4aAnv78f7GvrzufJC4G5tecK/go-libp2p-loggables"
-	proto "gx/ipfs/QmdxUuburamoF6zF9qjeQC4WYcWGbWuRmdLacMEsW8ioD8/gogo-protobuf/proto"
+	fuse "bazil.org/fuse"
+	fs "bazil.org/fuse/fs"
+	proto "github.com/gogo/protobuf/proto"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	logging "github.com/dms3-fs/go-log"
+	lgbl "github.com/dms3-p2p/go-p2p-loggables"
 )
 
-var log = logging.Logger("fuse/ipfs")
+var log = logging.Logger("fuse/dms3fs")
 
-// FileSystem is the readonly IPFS Fuse Filesystem.
+// FileSystem is the readonly DMS3FS Fuse Filesystem.
 type FileSystem struct {
-	Ipfs *core.IpfsNode
+	Dms3Fs *core.Dms3FsNode
 }
 
-// NewFileSystem constructs new fs using given core.IpfsNode instance.
-func NewFileSystem(ipfs *core.IpfsNode) *FileSystem {
-	return &FileSystem{Ipfs: ipfs}
+// NewFileSystem constructs new fs using given core.Dms3FsNode instance.
+func NewFileSystem(dms3fs *core.Dms3FsNode) *FileSystem {
+	return &FileSystem{Dms3Fs: dms3fs}
 }
 
 // Root constructs the Root of the filesystem, a Root object.
 func (f FileSystem) Root() (fs.Node, error) {
-	return &Root{Ipfs: f.Ipfs}, nil
+	return &Root{Dms3Fs: f.Dms3Fs}, nil
 }
 
 // Root is the root object of the filesystem tree.
 type Root struct {
-	Ipfs *core.IpfsNode
+	Dms3Fs *core.Dms3FsNode
 }
 
 // Attr returns file attributes.
@@ -67,7 +67,7 @@ func (s *Root) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return nil, fuse.ENOENT
 	}
 
-	nd, err := s.Ipfs.Resolver.ResolvePath(ctx, p)
+	nd, err := s.Dms3Fs.Resolver.ResolvePath(ctx, p)
 	if err != nil {
 		// todo: make this error more versatile.
 		return nil, fuse.ENOENT
@@ -75,7 +75,7 @@ func (s *Root) Lookup(ctx context.Context, name string) (fs.Node, error) {
 
 	switch nd := nd.(type) {
 	case *mdag.ProtoNode, *mdag.RawNode:
-		return &Node{Ipfs: s.Ipfs, Nd: nd}, nil
+		return &Node{Dms3Fs: s.Dms3Fs, Nd: nd}, nil
 	default:
 		log.Error("fuse node was not a protobuf node")
 		return nil, fuse.ENOTSUP
@@ -91,8 +91,8 @@ func (*Root) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 // Node is the core object representing a filesystem tree node.
 type Node struct {
-	Ipfs   *core.IpfsNode
-	Nd     ipld.Node
+	Dms3Fs   *core.Dms3FsNode
+	Nd     dms3ld.Node
 	cached *ftpb.Data
 }
 
@@ -143,7 +143,7 @@ func (s *Node) Attr(ctx context.Context, a *fuse.Attr) error {
 // Lookup performs a lookup under this node.
 func (s *Node) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	log.Debugf("Lookup '%s'", name)
-	link, _, err := uio.ResolveUnixfsOnce(ctx, s.Ipfs.DAG, s.Nd, []string{name})
+	link, _, err := uio.ResolveUnixfsOnce(ctx, s.Dms3Fs.DAG, s.Nd, []string{name})
 	switch err {
 	case os.ErrNotExist, mdag.ErrLinkNotFound:
 		// todo: make this error more versatile.
@@ -155,9 +155,9 @@ func (s *Node) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		// noop
 	}
 
-	nd, err := s.Ipfs.DAG.Get(ctx, link.Cid)
+	nd, err := s.Dms3Fs.DAG.Get(ctx, link.Cid)
 	switch err {
-	case ipld.ErrNotFound:
+	case dms3ld.ErrNotFound:
 	default:
 		log.Errorf("fuse lookup %q: %s", name, err)
 		return nil, err
@@ -165,24 +165,24 @@ func (s *Node) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		// noop
 	}
 
-	return &Node{Ipfs: s.Ipfs, Nd: nd}, nil
+	return &Node{Dms3Fs: s.Dms3Fs, Nd: nd}, nil
 }
 
 // ReadDirAll reads the link structure as directory entries
 func (s *Node) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	log.Debug("Node ReadDir")
-	dir, err := uio.NewDirectoryFromNode(s.Ipfs.DAG, s.Nd)
+	dir, err := uio.NewDirectoryFromNode(s.Dms3Fs.DAG, s.Nd)
 	if err != nil {
 		return nil, err
 	}
 
 	var entries []fuse.Dirent
-	err = dir.ForEachLink(ctx, func(lnk *ipld.Link) error {
+	err = dir.ForEachLink(ctx, func(lnk *dms3ld.Link) error {
 		n := lnk.Name
 		if len(n) == 0 {
 			n = lnk.Cid.String()
 		}
-		nd, err := s.Ipfs.DAG.Get(ctx, lnk.Cid)
+		nd, err := s.Dms3Fs.DAG.Get(ctx, lnk.Cid)
 		if err != nil {
 			log.Warning("error fetching directory child node: ", err)
 		}
@@ -241,13 +241,13 @@ func (s *Node) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 
 	// setup our logging event
 	lm := make(lgbl.DeferredMap)
-	lm["fs"] = "ipfs"
+	lm["fs"] = "dms3fs"
 	lm["key"] = func() interface{} { return c.String() }
 	lm["req_offset"] = req.Offset
 	lm["req_size"] = req.Size
 	defer log.EventBegin(ctx, "fuseRead", lm).Done()
 
-	r, err := uio.NewDagReader(ctx, s.Nd, s.Ipfs.DAG)
+	r, err := uio.NewDagReader(ctx, s.Nd, s.Dms3Fs.DAG)
 	if err != nil {
 		return err
 	}

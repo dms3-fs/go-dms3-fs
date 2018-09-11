@@ -8,19 +8,19 @@ import (
 
 	gopath "path"
 
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	caopts "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
-	coredag "github.com/ipfs/go-ipfs/core/coredag"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	caopts "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
+	coredag "github.com/dms3-fs/go-dms3-fs/core/coredag"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 type DagAPI CoreAPI
 
 type dagBatch struct {
 	api   *DagAPI
-	toPut []ipld.Node
+	toPut []dms3ld.Node
 
 	lk sync.Mutex
 }
@@ -36,11 +36,11 @@ func (api *DagAPI) Put(ctx context.Context, src io.Reader, opts ...caopts.DagPut
 		return nil, err
 	}
 
-	return coreiface.IpldPath(nd.Cid()), nil
+	return coreiface.Dms3LdPath(nd.Cid()), nil
 }
 
 // Get resolves `path` using Unixfs resolver, returns the resolved Node.
-func (api *DagAPI) Get(ctx context.Context, path coreiface.Path) (ipld.Node, error) {
+func (api *DagAPI) Get(ctx context.Context, path coreiface.Path) (dms3ld.Node, error) {
 	return api.core().ResolveNode(ctx, path)
 }
 
@@ -85,7 +85,7 @@ func (b *dagBatch) Put(ctx context.Context, src io.Reader, opts ...caopts.DagPut
 	b.toPut = append(b.toPut, nd)
 	b.lk.Unlock()
 
-	return coreiface.IpldPath(nd.Cid()), nil
+	return coreiface.Dms3LdPath(nd.Cid()), nil
 }
 
 // Commit commits nodes to the datastore and announces them to the network
@@ -99,7 +99,7 @@ func (b *dagBatch) Commit(ctx context.Context) error {
 	return b.api.node.DAG.AddMany(ctx, b.toPut)
 }
 
-func getNode(src io.Reader, opts ...caopts.DagPutOption) (ipld.Node, error) {
+func getNode(src io.Reader, opts ...caopts.DagPutOption) (dms3ld.Node, error) {
 	settings, err := caopts.DagPutOptions(opts...)
 	if err != nil {
 		return nil, err

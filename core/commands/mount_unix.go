@@ -7,74 +7,74 @@ import (
 	"io"
 	"strings"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	nodeMount "github.com/ipfs/go-ipfs/fuse/node"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	nodeMount "github.com/dms3-fs/go-dms3-fs/fuse/node"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	config "gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
+	"github.com/dms3-fs/go-fs-cmdkit"
+	config "github.com/dms3-fs/go-fs-config"
 )
 
 var MountCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
-		Tagline: "Mounts IPFS to the filesystem (read-only).",
+		Tagline: "Mounts DMS3FS to the filesystem (read-only).",
 		ShortDescription: `
-Mount IPFS at a read-only mountpoint on the OS (default: /ipfs and /ipns).
-All IPFS objects will be accessible under that directory. Note that the
+Mount DMS3FS at a read-only mountpoint on the OS (default: /dms3fs and /dms3ns).
+All DMS3FS objects will be accessible under that directory. Note that the
 root will not be listable, as it is virtual. Access known paths directly.
 
-You may have to create /ipfs and /ipns before using 'ipfs mount':
+You may have to create /dms3fs and /dms3ns before using 'dms3fs mount':
 
-> sudo mkdir /ipfs /ipns
-> sudo chown $(whoami) /ipfs /ipns
-> ipfs daemon &
-> ipfs mount
+> sudo mkdir /dms3fs /dms3ns
+> sudo chown $(whoami) /dms3fs /dms3ns
+> dms3fs daemon &
+> dms3fs mount
 `,
 		LongDescription: `
-Mount IPFS at a read-only mountpoint on the OS. The default, /ipfs and /ipns,
+Mount DMS3FS at a read-only mountpoint on the OS. The default, /dms3fs and /dms3ns,
 are set in the configuration file, but can be overriden by the options.
-All IPFS objects will be accessible under this directory. Note that the
+All DMS3FS objects will be accessible under this directory. Note that the
 root will not be listable, as it is virtual. Access known paths directly.
 
-You may have to create /ipfs and /ipns before using 'ipfs mount':
+You may have to create /dms3fs and /dms3ns before using 'dms3fs mount':
 
-> sudo mkdir /ipfs /ipns
-> sudo chown $(whoami) /ipfs /ipns
-> ipfs daemon &
-> ipfs mount
+> sudo mkdir /dms3fs /dms3ns
+> sudo chown $(whoami) /dms3fs /dms3ns
+> dms3fs daemon &
+> dms3fs mount
 
 Example:
 
 # setup
 > mkdir foo
 > echo "baz" > foo/bar
-> ipfs add -r foo
+> dms3fs add -r foo
 added QmWLdkp93sNxGRjnFHPaYg8tCQ35NBY3XPn6KiETd3Z4WR foo/bar
 added QmSh5e7S6fdcu75LAbXNZAFY2nGyZUJXyLCJDvn2zRkWyC foo
-> ipfs ls QmSh5e7S6fdcu75LAbXNZAFY2nGyZUJXyLCJDvn2zRkWyC
+> dms3fs ls QmSh5e7S6fdcu75LAbXNZAFY2nGyZUJXyLCJDvn2zRkWyC
 QmWLdkp93sNxGRjnFHPaYg8tCQ35NBY3XPn6KiETd3Z4WR 12 bar
-> ipfs cat QmWLdkp93sNxGRjnFHPaYg8tCQ35NBY3XPn6KiETd3Z4WR
+> dms3fs cat QmWLdkp93sNxGRjnFHPaYg8tCQ35NBY3XPn6KiETd3Z4WR
 baz
 
 # mount
-> ipfs daemon &
-> ipfs mount
-IPFS mounted at: /ipfs
-IPNS mounted at: /ipns
-> cd /ipfs/QmSh5e7S6fdcu75LAbXNZAFY2nGyZUJXyLCJDvn2zRkWyC
+> dms3fs daemon &
+> dms3fs mount
+DMS3FS mounted at: /dms3fs
+DMS3NS mounted at: /dms3ns
+> cd /dms3fs/QmSh5e7S6fdcu75LAbXNZAFY2nGyZUJXyLCJDvn2zRkWyC
 > ls
 bar
 > cat bar
 baz
-> cat /ipfs/QmSh5e7S6fdcu75LAbXNZAFY2nGyZUJXyLCJDvn2zRkWyC/bar
+> cat /dms3fs/QmSh5e7S6fdcu75LAbXNZAFY2nGyZUJXyLCJDvn2zRkWyC/bar
 baz
-> cat /ipfs/QmWLdkp93sNxGRjnFHPaYg8tCQ35NBY3XPn6KiETd3Z4WR
+> cat /dms3fs/QmWLdkp93sNxGRjnFHPaYg8tCQ35NBY3XPn6KiETd3Z4WR
 baz
 `,
 	},
 	Options: []cmdkit.Option{
-		cmdkit.StringOption("ipfs-path", "f", "The path where IPFS should be mounted."),
-		cmdkit.StringOption("ipns-path", "n", "The path where IPNS should be mounted."),
+		cmdkit.StringOption("dms3fs-path", "f", "The path where DMS3FS should be mounted."),
+		cmdkit.StringOption("dms3ns-path", "n", "The path where DMS3NS should be mounted."),
 	},
 	Run: func(req cmds.Request, res cmds.Response) {
 		cfg, err := req.InvocContext().GetConfig()
@@ -101,7 +101,7 @@ baz
 			return
 		}
 		if !found {
-			fsdir = cfg.Mounts.IPFS // use default value
+			fsdir = cfg.Mounts.DMS3FS // use default value
 		}
 
 		// get default mount points
@@ -111,7 +111,7 @@ baz
 			return
 		}
 		if !found {
-			nsdir = cfg.Mounts.IPNS // NB: be sure to not redeclare!
+			nsdir = cfg.Mounts.DMS3NS // NB: be sure to not redeclare!
 		}
 
 		err = nodeMount.Mount(node, fsdir, nsdir)
@@ -121,8 +121,8 @@ baz
 		}
 
 		var output config.Mounts
-		output.IPFS = fsdir
-		output.IPNS = nsdir
+		output.DMS3FS = fsdir
+		output.DMS3NS = nsdir
 		res.SetOutput(&output)
 	},
 	Type: config.Mounts{},
@@ -138,8 +138,8 @@ baz
 				return nil, e.TypeErr(mnts, v)
 			}
 
-			s := fmt.Sprintf("IPFS mounted at: %s\n", mnts.IPFS)
-			s += fmt.Sprintf("IPNS mounted at: %s\n", mnts.IPNS)
+			s := fmt.Sprintf("DMS3FS mounted at: %s\n", mnts.DMS3FS)
+			s += fmt.Sprintf("DMS3NS mounted at: %s\n", mnts.DMS3NS)
 			return strings.NewReader(s), nil
 		},
 	},

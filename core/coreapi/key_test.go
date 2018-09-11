@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	opt "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface/options"
 )
 
 func TestListSelf(t *testing.T) {
@@ -31,8 +31,8 @@ func TestListSelf(t *testing.T) {
 		t.Errorf("expected the key to be called 'self', got '%s'", keys[0].Name())
 	}
 
-	if keys[0].Path().String() != "/ipns/"+testPeerID {
-		t.Errorf("expected the key to have path '/ipns/%s', got '%s'", testPeerID, keys[0].Path().String())
+	if keys[0].Path().String() != "/dms3ns/"+testPeerID {
+		t.Errorf("expected the key to have path '/dms3ns/%s', got '%s'", testPeerID, keys[0].Path().String())
 	}
 }
 
@@ -98,8 +98,8 @@ func TestGenerate(t *testing.T) {
 		t.Errorf("expected the key to be called 'foo', got '%s'", k.Name())
 	}
 
-	if !strings.HasPrefix(k.Path().String(), "/ipns/Qm") {
-		t.Errorf("expected the key to be prefixed with '/ipns/Qm', got '%s'", k.Path().String())
+	if !strings.HasPrefix(k.Path().String(), "/dms3ns/Qm") {
+		t.Errorf("expected the key to be prefixed with '/dms3ns/Qm', got '%s'", k.Path().String())
 	}
 }
 
@@ -120,8 +120,8 @@ func TestGenerateSize(t *testing.T) {
 		t.Errorf("expected the key to be called 'foo', got '%s'", k.Name())
 	}
 
-	if !strings.HasPrefix(k.Path().String(), "/ipns/Qm") {
-		t.Errorf("expected the key to be prefixed with '/ipns/Qm', got '%s'", k.Path().String())
+	if !strings.HasPrefix(k.Path().String(), "/dms3ns/Qm") {
+		t.Errorf("expected the key to be prefixed with '/dms3ns/Qm', got '%s'", k.Path().String())
 	}
 }
 
@@ -143,8 +143,8 @@ func TestGenerateType(t *testing.T) {
 	}
 
 	// Expected to be an inlined identity hash.
-	if !strings.HasPrefix(k.Path().String(), "/ipns/12") {
-		t.Errorf("expected the key to be prefixed with '/ipns/12', got '%s'", k.Path().String())
+	if !strings.HasPrefix(k.Path().String(), "/dms3ns/12") {
+		t.Errorf("expected the key to be prefixed with '/dms3ns/12', got '%s'", k.Path().String())
 	}
 }
 
@@ -214,13 +214,13 @@ func TestList(t *testing.T) {
 		return
 	}
 
-	if !strings.HasPrefix(l[0].Path().String(), "/ipns/Qm") {
-		t.Fatalf("expected key 0 to be prefixed with '/ipns/Qm', got '%s'", l[0].Name())
+	if !strings.HasPrefix(l[0].Path().String(), "/dms3ns/Qm") {
+		t.Fatalf("expected key 0 to be prefixed with '/dms3ns/Qm', got '%s'", l[0].Name())
 		return
 	}
 
-	if !strings.HasPrefix(l[1].Path().String(), "/ipns/Qm") {
-		t.Fatalf("expected key 1 to be prefixed with '/ipns/Qm', got '%s'", l[1].Name())
+	if !strings.HasPrefix(l[1].Path().String(), "/dms3ns/Qm") {
+		t.Fatalf("expected key 1 to be prefixed with '/dms3ns/Qm', got '%s'", l[1].Name())
 		return
 	}
 }

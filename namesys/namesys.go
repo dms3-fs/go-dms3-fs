@@ -5,35 +5,35 @@ import (
 	"strings"
 	"time"
 
-	opts "github.com/ipfs/go-ipfs/namesys/opts"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	opts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
+	path "github.com/dms3-fs/go-path"
 
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	ci "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
-	peer "gx/ipfs/QmQsErDt8Qgw1XrsXf2BpEzDgGWtB1YLsTAARBup5b6B9W/go-libp2p-peer"
-	routing "gx/ipfs/QmS4niovD1U6pRjUBXivr1zvvLBqiTKbERjFo994JU7oQS/go-libp2p-routing"
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	lru "gx/ipfs/QmVYxfoJQiZijTgPNHCHgHELvQpbsJNTg6Crmc3dQkj3yy/golang-lru"
-	isd "gx/ipfs/QmZmmuAXgX73UQmX1jRKjTGmjzq24Jinqkq8vzkBtno4uX/go-is-domain"
+	lru "github.com/hashicorp/golang-lru"
+	ds "github.com/dms3-fs/go-datastore"
+	isd "github.com/jbenet/go-is-domain"
+	ci "github.com/dms3-p2p/go-p2p-crypto"
+	peer "github.com/dms3-p2p/go-p2p-peer"
+	routing "github.com/dms3-p2p/go-p2p-routing"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
-// mpns (a multi-protocol NameSystem) implements generic IPFS naming.
+// mpns (a multi-protocol NameSystem) implements generic DMS3FS naming.
 //
 // Uses several Resolvers:
-// (a) IPFS routing naming: SFS-like PKI names.
+// (a) DMS3FS routing naming: SFS-like PKI names.
 // (b) dns domains: resolves using links in DNS TXT records
 // (c) proquints: interprets string as the raw byte data.
 //
-// It can only publish to: (a) IPFS routing naming.
+// It can only publish to: (a) DMS3FS routing naming.
 //
 type mpns struct {
-	dnsResolver, proquintResolver, ipnsResolver resolver
-	ipnsPublisher                               Publisher
+	dnsResolver, proquintResolver, dms3nsResolver resolver
+	dms3nsPublisher                               Publisher
 
 	cache *lru.Cache
 }
 
-// NewNameSystem will construct the IPFS naming system based on Routing
+// NewNameSystem will construct the DMS3FS naming system based on Routing
 func NewNameSystem(r routing.ValueStore, ds ds.Datastore, cachesize int) NameSystem {
 	var cache *lru.Cache
 	if cachesize > 0 {
@@ -43,8 +43,8 @@ func NewNameSystem(r routing.ValueStore, ds ds.Datastore, cachesize int) NameSys
 	return &mpns{
 		dnsResolver:      NewDNSResolver(),
 		proquintResolver: new(ProquintResolver),
-		ipnsResolver:     NewIpnsResolver(r),
-		ipnsPublisher:    NewIpnsPublisher(r, ds),
+		dms3nsResolver:     NewDms3NsResolver(r),
+		dms3nsPublisher:    NewDms3NsPublisher(r, ds),
 		cache:            cache,
 	}
 }
@@ -53,21 +53,21 @@ const DefaultResolverCacheTTL = time.Minute
 
 // Resolve implements Resolver.
 func (ns *mpns) Resolve(ctx context.Context, name string, options ...opts.ResolveOpt) (path.Path, error) {
-	if strings.HasPrefix(name, "/ipfs/") {
+	if strings.HasPrefix(name, "/dms3fs/") {
 		return path.ParsePath(name)
 	}
 
 	if !strings.HasPrefix(name, "/") {
-		return path.ParsePath("/ipfs/" + name)
+		return path.ParsePath("/dms3fs/" + name)
 	}
 
-	return resolve(ctx, ns, name, opts.ProcessOpts(options), "/ipns/")
+	return resolve(ctx, ns, name, opts.ProcessOpts(options), "/dms3ns/")
 }
 
 // resolveOnce implements resolver.
 func (ns *mpns) resolveOnce(ctx context.Context, name string, options *opts.ResolveOpts) (path.Path, time.Duration, error) {
-	if !strings.HasPrefix(name, "/ipns/") {
-		name = "/ipns/" + name
+	if !strings.HasPrefix(name, "/dms3ns/") {
+		name = "/dms3ns/" + name
 	}
 	segments := strings.SplitN(name, "/", 4)
 	if len(segments) < 3 || segments[0] != "" {
@@ -81,12 +81,12 @@ func (ns *mpns) resolveOnce(ctx context.Context, name string, options *opts.Reso
 	var err error
 	if !ok {
 		// Resolver selection:
-		// 1. if it is a multihash resolve through "ipns".
+		// 1. if it is a multihash resolve through "dms3ns".
 		// 2. if it is a domain name, resolve through "dns"
 		// 3. otherwise resolve through the "proquint" resolver
 		var res resolver
 		if _, err := mh.FromB58String(key); err == nil {
-			res = ns.ipnsResolver
+			res = ns.dms3nsResolver
 		} else if isd.IsDomain(key) {
 			res = ns.dnsResolver
 		} else {
@@ -117,7 +117,7 @@ func (ns *mpns) PublishWithEOL(ctx context.Context, name ci.PrivKey, value path.
 	if err != nil {
 		return err
 	}
-	if err := ns.ipnsPublisher.PublishWithEOL(ctx, name, value, eol); err != nil {
+	if err := ns.dms3nsPublisher.PublishWithEOL(ctx, name, value, eol); err != nil {
 		return err
 	}
 	ttl := DefaultResolverCacheTTL

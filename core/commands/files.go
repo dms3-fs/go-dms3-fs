@@ -11,46 +11,46 @@ import (
 	"sort"
 	"strings"
 
-	oldcmds "github.com/ipfs/go-ipfs/commands"
-	lgc "github.com/ipfs/go-ipfs/commands/legacy"
-	core "github.com/ipfs/go-ipfs/core"
-	cmdenv "github.com/ipfs/go-ipfs/core/commands/cmdenv"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	ft "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	uio "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs/io"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	bservice "gx/ipfs/QmbSB9Uh3wVgmiCb1fAb8zuC3qAE6un4kd1jvatUurfAmB/go-blockservice"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
-	resolver "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path/resolver"
+	bservice "github.com/dms3-fs/go-blockservice"
+	oldcmds "github.com/dms3-fs/go-dms3-fs/commands"
+	lgc "github.com/dms3-fs/go-dms3-fs/commands/legacy"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	dag "github.com/dms3-fs/go-merkledag"
+	path "github.com/dms3-fs/go-path"
+	resolver "github.com/dms3-fs/go-path/resolver"
+	ft "github.com/dms3-fs/go-unixfs"
+	uio "github.com/dms3-fs/go-unixfs/io"
 
-	humanize "gx/ipfs/QmPSBJL4momYnE7DcUyk2DVhD6rH488ZmHBGLbxNdhU44K/go-humanize"
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
-	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
-	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	offline "gx/ipfs/QmZxjqR9Qgompju73kakSoUj3rbVndAzky3oCDiBNCxPs1/go-ipfs-exchange-offline"
-	mfs "gx/ipfs/QmdghKsSDa2AD1kC4qYRnVYWqZecdSBRZjeXRdhMYYhafj/go-mfs"
+	humanize "github.com/dustin/go-humanize"
+	cid "github.com/dms3-fs/go-cid"
+	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	offline "github.com/dms3-fs/go-fs-exchange-offline"
+	dms3ld "github.com/dms3-fs/go-ld-format"
+	logging "github.com/dms3-fs/go-log"
+	mfs "github.com/dms3-fs/go-mfs"
+	mh "github.com/dms3-mft/go-multihash"
 )
 
 var flog = logging.Logger("cmds/files")
 
-// FilesCmd is the 'ipfs files' command
+// FilesCmd is the 'dms3fs files' command
 var FilesCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Interact with unixfs files.",
 		ShortDescription: `
-Files is an API for manipulating IPFS objects as if they were a unix
+Files is an API for manipulating DMS3FS objects as if they were a unix
 filesystem.
 
 NOTE:
-Most of the subcommands of 'ipfs files' accept the '--flush' flag. It defaults
+Most of the subcommands of 'dms3fs files' accept the '--flush' flag. It defaults
 to true. Use caution when setting this flag to false. It will improve
 performance for large numbers of file operations, but it does so at the cost
 of consistency guarantees. If the daemon is unexpectedly killed before running
-'ipfs files flush' on the files in question, then data may be lost. This also
-applies to running 'ipfs repo gc' concurrently with '--flush=false'
+'dms3fs files flush' on the files in question, then data may be lost. This also
+applies to running 'dms3fs repo gc' concurrently with '--flush=false'
 operations.
 `,
 	},
@@ -129,7 +129,7 @@ var filesStatCmd = &cmds.Command{
 
 		withLocal, _ := req.Options["with-local"].(bool)
 
-		var dagserv ipld.DAGService
+		var dagserv dms3ld.DAGService
 		if withLocal {
 			// an offline DAGService will not fetch from the network
 			dagserv = dag.NewDAGService(bservice.New(
@@ -218,7 +218,7 @@ func statGetFormatOptions(req *cmds.Request) (string, error) {
 	}
 }
 
-func statNode(nd ipld.Node) (*statOutput, error) {
+func statNode(nd dms3ld.Node) (*statOutput, error) {
 	c := nd.Cid()
 
 	cumulsize, err := nd.Size()
@@ -263,7 +263,7 @@ func statNode(nd ipld.Node) (*statOutput, error) {
 	}
 }
 
-func walkBlock(ctx context.Context, dagserv ipld.DAGService, nd ipld.Node) (bool, uint64, error) {
+func walkBlock(ctx context.Context, dagserv dms3ld.DAGService, nd dms3ld.Node) (bool, uint64, error) {
 	// Start with the block data size
 	sizeLocal := uint64(len(nd.RawData()))
 
@@ -272,7 +272,7 @@ func walkBlock(ctx context.Context, dagserv ipld.DAGService, nd ipld.Node) (bool
 	for _, link := range nd.Links() {
 		child, err := dagserv.Get(ctx, link.Cid)
 
-		if err == ipld.ErrNotFound {
+		if err == dms3ld.ErrNotFound {
 			local = false
 			continue
 		}
@@ -353,9 +353,9 @@ var filesCpCmd = &oldcmds.Command{
 	},
 }
 
-func getNodeFromPath(ctx context.Context, node *core.IpfsNode, dagservice ipld.DAGService, p string) (ipld.Node, error) {
+func getNodeFromPath(ctx context.Context, node *core.Dms3FsNode, dagservice dms3ld.DAGService, p string) (dms3ld.Node, error) {
 	switch {
-	case strings.HasPrefix(p, "/ipfs/"):
+	case strings.HasPrefix(p, "/dms3fs/"):
 		np, err := path.ParsePath(p)
 		if err != nil {
 			return nil, err
@@ -389,7 +389,7 @@ List directories in the local mutable namespace.
 
 Examples:
 
-    $ ipfs files ls /welcome/docs/
+    $ dms3fs files ls /welcome/docs/
     about
     contact
     help
@@ -397,7 +397,7 @@ Examples:
     readme
     security-notes
 
-    $ ipfs files ls /myfiles/a/b/c/d
+    $ dms3fs files ls /myfiles/a/b/c/d
     foo
     bar
 `,
@@ -533,7 +533,7 @@ will read the entire file similar to unix cat.
 
 Examples:
 
-    $ ipfs files read /test/hello
+    $ dms3fs files read /test/hello
     hello
         `,
 	},
@@ -644,7 +644,7 @@ Move files around. Just like traditional unix mv.
 
 Example:
 
-    $ ipfs files mv /myfs/a/b/c /myfs/foo/newc
+    $ dms3fs files mv /myfs/a/b/c /myfs/foo/newc
 
 `,
 	},
@@ -705,13 +705,13 @@ of writes to a deeper directory structure.
 
 EXAMPLE:
 
-    echo "hello world" | ipfs files write --create /myfs/a/b/file
-    echo "hello world" | ipfs files write --truncate /myfs/a/b/file
+    echo "hello world" | dms3fs files write --create /myfs/a/b/file
+    echo "hello world" | dms3fs files write --truncate /myfs/a/b/file
 
 WARNING:
 
 Usage of the '--flush=false' option does not guarantee data durability until
-the tree has been flushed. This can be accomplished by running 'ipfs files
+the tree has been flushed. This can be accomplished by running 'dms3fs files
 stat' on the file or any of its ancestors.
 `,
 	},
@@ -842,8 +842,8 @@ NOTE: All paths must be absolute.
 
 Examples:
 
-    $ ipfs files mkdir /test/newdir
-    $ ipfs files mkdir -p /test/does/not/exist/yet
+    $ dms3fs files mkdir /test/newdir
+    $ dms3fs files mkdir -p /test/does/not/exist/yet
 `,
 	},
 
@@ -999,12 +999,12 @@ var filesRmCmd = &oldcmds.Command{
 		ShortDescription: `
 Remove files or directories.
 
-    $ ipfs files rm /foo
-    $ ipfs files ls /bar
+    $ dms3fs files rm /foo
+    $ dms3fs files ls /bar
     cat
     dog
     fish
-    $ ipfs files rm -r /bar
+    $ dms3fs files rm -r /bar
 `,
 	},
 

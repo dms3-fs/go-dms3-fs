@@ -1,31 +1,31 @@
 /*
-Package namesys implements resolvers and publishers for the IPFS
-naming system (IPNS).
+Package namesys implements resolvers and publishers for the DMS3FS
+naming system (DMS3NS).
 
-The core of IPFS is an immutable, content-addressable Merkle graph.
+The core of DMS3FS is an immutable, content-addressable Merkle graph.
 That works well for many use cases, but doesn't allow you to answer
 questions like "what is Alice's current homepage?".  The mutable name
 system allows Alice to publish information like:
 
   The current homepage for alice.example.com is
-  /ipfs/Qmcqtw8FfrVSBaRmbWwHxt3AuySBhJLcvmFYi3Lbc4xnwj
+  /dms3fs/Qmcqtw8FfrVSBaRmbWwHxt3AuySBhJLcvmFYi3Lbc4xnwj
 
 or:
 
   The current homepage for node
   QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
   is
-  /ipfs/Qmcqtw8FfrVSBaRmbWwHxt3AuySBhJLcvmFYi3Lbc4xnwj
+  /dms3fs/Qmcqtw8FfrVSBaRmbWwHxt3AuySBhJLcvmFYi3Lbc4xnwj
 
 The mutable name system also allows users to resolve those references
-to find the immutable IPFS object currently referenced by a given
+to find the immutable DMS3FS object currently referenced by a given
 mutable name.
 
 For command-line bindings to this functionality, see:
 
-  ipfs name
-  ipfs dns
-  ipfs resolve
+  dms3fs name
+  dms3fs dns
+  dms3fs resolve
 */
 package namesys
 
@@ -35,10 +35,10 @@ import (
 
 	context "context"
 
-	opts "github.com/ipfs/go-ipfs/namesys/opts"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	opts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
+	path "github.com/dms3-fs/go-path"
 
-	ci "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
+	ci "github.com/dms3-p2p/go-p2p-crypto"
 )
 
 // ErrResolveFailed signals an error when attempting to resolve.
@@ -67,15 +67,15 @@ type NameSystem interface {
 type Resolver interface {
 
 	// Resolve performs a recursive lookup, returning the dereferenced
-	// path.  For example, if ipfs.io has a DNS TXT record pointing to
-	//   /ipns/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
-	// and there is a DHT IPNS entry for
+	// path.  For example, if dms3.io has a DNS TXT record pointing to
+	//   /dms3ns/QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
+	// and there is a DHT DMS3NS entry for
 	//   QmatmE9msSfkKxoffpHwNLNKgwZG8eT9Bud6YoPab52vpy
-	//   -> /ipfs/Qmcqtw8FfrVSBaRmbWwHxt3AuySBhJLcvmFYi3Lbc4xnwj
+	//   -> /dms3fs/Qmcqtw8FfrVSBaRmbWwHxt3AuySBhJLcvmFYi3Lbc4xnwj
 	// then
-	//   Resolve(ctx, "/ipns/ipfs.io")
+	//   Resolve(ctx, "/dms3ns/dms3.io")
 	// will resolve both names, returning
-	//   /ipfs/Qmcqtw8FfrVSBaRmbWwHxt3AuySBhJLcvmFYi3Lbc4xnwj
+	//   /dms3fs/Qmcqtw8FfrVSBaRmbWwHxt3AuySBhJLcvmFYi3Lbc4xnwj
 	//
 	// There is a default depth-limit to avoid infinite recursion.  Most
 	// users will be fine with this default limit, but if you need to

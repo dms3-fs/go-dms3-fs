@@ -4,12 +4,12 @@ import (
 	"net"
 	"net/http"
 
-	core "github.com/ipfs/go-ipfs/core"
+	core "github.com/dms3-fs/go-dms3-fs/core"
 )
 
 func RedirectOption(path string, redirect string) ServeOption {
 	handler := &redirectHandler{redirect}
-	return func(n *core.IpfsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
+	return func(n *core.Dms3FsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
 		mux.Handle("/"+path+"/", handler)
 		return mux, nil
 	}

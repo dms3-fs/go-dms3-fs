@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	mdag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
+	mdag "github.com/dms3-fs/go-merkledag"
 
-	ipld "gx/ipfs/QmX5CsuHyVZeTLxgRSYkgLSDQKb9UjE8xnhQzCEJWWWFsC/go-ipld-format"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	dms3ld "github.com/dms3-fs/go-ld-format"
 )
 
 // DiffEnumerate fetches every object in the graph pointed to by 'to' that is
 // not in 'from'. This can be used to more efficiently fetch a graph if you can
 // guarantee you already have the entirety of 'from'
-func DiffEnumerate(ctx context.Context, dserv ipld.NodeGetter, from, to *cid.Cid) error {
+func DiffEnumerate(ctx context.Context, dserv dms3ld.NodeGetter, from, to *cid.Cid) error {
 	fnd, err := dserv.Get(ctx, from)
 	if err != nil {
 		return fmt.Errorf("get %s: %s", from, err)
@@ -64,9 +64,9 @@ type diffpair struct {
 
 // getLinkDiff returns a changeset between nodes 'a' and 'b'. Currently does
 // not log deletions as our usecase doesnt call for this.
-func getLinkDiff(a, b ipld.Node) []diffpair {
-	ina := make(map[string]*ipld.Link)
-	inb := make(map[string]*ipld.Link)
+func getLinkDiff(a, b dms3ld.Node) []diffpair {
+	ina := make(map[string]*dms3ld.Link)
+	inb := make(map[string]*dms3ld.Link)
 	var aonly []*cid.Cid
 	for _, l := range b.Links() {
 		inb[l.Cid.KeyString()] = l

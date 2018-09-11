@@ -4,13 +4,13 @@ import (
 	"io"
 	"strings"
 
-	cmds "github.com/ipfs/go-ipfs/commands"
-	e "github.com/ipfs/go-ipfs/core/commands/e"
-	ncmd "github.com/ipfs/go-ipfs/core/commands/name"
-	namesys "github.com/ipfs/go-ipfs/namesys"
-	nsopts "github.com/ipfs/go-ipfs/namesys/opts"
+	cmds "github.com/dms3-fs/go-dms3-fs/commands"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	ncmd "github.com/dms3-fs/go-dms3-fs/core/commands/name"
+	namesys "github.com/dms3-fs/go-dms3-fs/namesys"
+	nsopts "github.com/dms3-fs/go-dms3-fs/namesys/opts"
 
-	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	"github.com/dms3-fs/go-fs-cmdkit"
 )
 
 var DNSCmd = &cmds.Command{
@@ -19,31 +19,31 @@ var DNSCmd = &cmds.Command{
 		ShortDescription: `
 Multihashes are hard to remember, but domain names are usually easy to
 remember.  To create memorable aliases for multihashes, DNS TXT
-records can point to other DNS links, IPFS objects, IPNS keys, etc.
+records can point to other DNS links, DMS3FS objects, DMS3NS keys, etc.
 This command resolves those links to the referenced object.
 `,
 		LongDescription: `
 Multihashes are hard to remember, but domain names are usually easy to
 remember.  To create memorable aliases for multihashes, DNS TXT
-records can point to other DNS links, IPFS objects, IPNS keys, etc.
+records can point to other DNS links, DMS3FS objects, DMS3NS keys, etc.
 This command resolves those links to the referenced object.
 
 For example, with this DNS TXT record:
 
-	> dig +short TXT _dnslink.ipfs.io
-	dnslink=/ipfs/QmRzTuh2Lpuz7Gr39stNr6mTFdqAghsZec1JoUnfySUzcy
+	> dig +short TXT _dnslink.dms3.io
+	dnslink=/dms3fs/QmRzTuh2Lpuz7Gr39stNr6mTFdqAghsZec1JoUnfySUzcy
 
 The resolver will give:
 
-	> ipfs dns ipfs.io
-	/ipfs/QmRzTuh2Lpuz7Gr39stNr6mTFdqAghsZec1JoUnfySUzcy
+	> dms3fs dns dms3.io
+	/dms3fs/QmRzTuh2Lpuz7Gr39stNr6mTFdqAghsZec1JoUnfySUzcy
 
 The resolver can recursively resolve:
 
-	> dig +short TXT recursive.ipfs.io
-	dnslink=/ipns/ipfs.io
-	> ipfs dns -r recursive.ipfs.io
-	/ipfs/QmRzTuh2Lpuz7Gr39stNr6mTFdqAghsZec1JoUnfySUzcy
+	> dig +short TXT recursive.dms3.io
+	dnslink=/dms3ns/dms3.io
+	> dms3fs dns -r recursive.dms3.io
+	/dms3fs/QmRzTuh2Lpuz7Gr39stNr6mTFdqAghsZec1JoUnfySUzcy
 `,
 	},
 

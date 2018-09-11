@@ -3,23 +3,23 @@ package commands
 import (
 	"testing"
 
-	"github.com/ipfs/go-ipfs/namesys"
+	"github.com/dms3-fs/go-dms3-fs/namesys"
 
-	ipns "gx/ipfs/QmNqBhXpBKa5jcjoUZHfxDgAFxtqK3rDA5jtW811GBvVob/go-ipns"
-	tu "gx/ipfs/QmRNhSdqzMcuRxX9A1egBeQ3BhDTguDV5HPwi8wRykkPU8/go-testutil"
+	dms3ns "github.com/dms3-fs/go-dms3ns"
+	tu "github.com/dms3-p2p/go-testutil"
 )
 
 func TestKeyTranslation(t *testing.T) {
 	pid := tu.RandPeerIDFatal(t)
 	pkname := namesys.PkKeyForID(pid)
-	ipnsname := ipns.RecordKey(pid)
+	dms3nsname := dms3ns.RecordKey(pid)
 
 	pkk, err := escapeDhtKey("/pk/" + pid.Pretty())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ipnsk, err := escapeDhtKey("/ipns/" + pid.Pretty())
+	dms3nsk, err := escapeDhtKey("/dms3ns/" + pid.Pretty())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestKeyTranslation(t *testing.T) {
 		t.Fatal("keys didnt match!")
 	}
 
-	if ipnsk != ipnsname {
+	if dms3nsk != dms3nsname {
 		t.Fatal("keys didnt match!")
 	}
 }

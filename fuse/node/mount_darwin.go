@@ -9,10 +9,10 @@ import (
 	"runtime"
 	"strings"
 
-	core "github.com/ipfs/go-ipfs/core"
+	core "github.com/dms3-fs/go-dms3-fs/core"
 
-	unix "gx/ipfs/QmVGjyM9i2msKvLXwh9VosCTgP4mL91kC7hDmqnwTTx6Hu/sys/unix"
-	"gx/ipfs/QmYRGECuvQnRX73fcvPnGbYijBcGN2HbKZQ7jh26qmLiHG/semver"
+	"github.com/blang/semver"
+	unix "golang.org/x/sys/unix"
 )
 
 func init() {
@@ -38,7 +38,7 @@ It is recommended you install it from the OSXFUSE website:
 
 For more help, see:
 
-	https://github.com/ipfs/go-ipfs/issues/177
+	https://github.com/dms3-fs/go-dms3-fs/issues/177
 `
 
 // errStrNoFuseHeaders is included in the output of `go get <fuseVersionPkg>` if there
@@ -55,7 +55,7 @@ It is recommended you install it from the OSXFUSE website:
 
 For more help, see:
 
-	https://github.com/ipfs/go-ipfs/issues/177
+	https://github.com/dms3-fs/go-dms3-fs/issues/177
 `
 
 var errStrNeedFuseVersion = `unable to check fuse version.
@@ -71,13 +71,13 @@ Please install it yourself by running:
 
 	go get %s
 
-You can also stop ipfs from running these checks and use whatever OSXFUSE
+You can also stop dms3fs from running these checks and use whatever OSXFUSE
 version you have by running:
 
-	ipfs config %s true
+	dms3fs config %s true
 
-[1]: https://github.com/ipfs/go-ipfs/issues/177
-[2]: https://github.com/ipfs/go-ipfs/pull/533
+[1]: https://github.com/dms3-fs/go-dms3-fs/issues/177
+[2]: https://github.com/dms3-fs/go-dms3-fs/pull/533
 [3]: %s
 `
 
@@ -101,25 +101,25 @@ You should see something like this:
 	fuse-version -only agent
 	OSXFUSE.AgentVersion: 2.7.3
 
-Just make sure the number is 2.7.2 or higher. You can then stop ipfs from
+Just make sure the number is 2.7.2 or higher. You can then stop dms3fs from
 trying to run these checks with:
 
-	ipfs config %s true
+	dms3fs config %s true
 
-[1]: https://github.com/ipfs/go-ipfs/issues/177
-[2]: https://github.com/ipfs/go-ipfs/pull/533
+[1]: https://github.com/dms3-fs/go-dms3-fs/issues/177
+[2]: https://github.com/dms3-fs/go-dms3-fs/pull/533
 [3]: %s
 `
 
 var errStrFixConfig = `config key invalid: %s %v
 You may be able to get this error to go away by setting it again:
 
-	ipfs config %s true
+	dms3fs config %s true
 
-Either way, please tell us at: http://github.com/ipfs/go-ipfs/issues
+Either way, please tell us at: http://github.com/dms3-fs/go-dms3-fs/issues
 `
 
-func darwinFuseCheckVersion(node *core.IpfsNode) error {
+func darwinFuseCheckVersion(node *core.Dms3FsNode) error {
 	// on OSX, check FUSE version.
 	if runtime.GOOS != "darwin" {
 		return nil
@@ -224,7 +224,7 @@ func ensureFuseVersionIsInstalled() error {
 	return nil
 }
 
-func userAskedToSkipFuseCheck(node *core.IpfsNode) (skip bool, err error) {
+func userAskedToSkipFuseCheck(node *core.Dms3FsNode) (skip bool, err error) {
 	val, err := node.Repo.GetConfigKey(dontCheckOSXFUSEConfigKey)
 	if err != nil {
 		return false, nil // failed to get config value. dont skip check.

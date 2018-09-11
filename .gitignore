@@ -4,6 +4,7 @@
 
 *.swp
 .ipfsconfig
+.dms3fsconfig
 *.out
 *.coverprofile
 *.test
@@ -13,12 +14,16 @@
 coverage.txt
 gx-workspace-update.json
 
-.ipfs
+.ipfs-fs
+.dms3-fs
 bin/gx
+bin/dms3gx
 bin/gx*
+bin/dms3gx*
 bin/tmp
 
 
 vendor
 .tarball
 go-ipfs-source.tar.gz
+go-dms3-fs-source.tar.gz

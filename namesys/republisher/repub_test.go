@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ipfs/go-ipfs/core"
-	mock "github.com/ipfs/go-ipfs/core/mock"
-	namesys "github.com/ipfs/go-ipfs/namesys"
-	. "github.com/ipfs/go-ipfs/namesys/republisher"
-	path "gx/ipfs/QmdMPBephdLYNESkruDX2hcDTgFYhoCt4LimWhgnomSdV2/go-path"
+	"github.com/dms3-fs/go-dms3-fs/core"
+	mock "github.com/dms3-fs/go-dms3-fs/core/mock"
+	namesys "github.com/dms3-fs/go-dms3-fs/namesys"
+	. "github.com/dms3-fs/go-dms3-fs/namesys/republisher"
+	path "github.com/dms3-fs/go-path"
 
-	mocknet "gx/ipfs/QmQiaskfWpdRJ4x2spEQjPFTUkEB87KDYu91qnNYBqvvcX/go-libp2p/p2p/net/mock"
-	goprocess "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
-	pstore "gx/ipfs/QmeKD8YT7887Xu6Z86iZmpYNxrLogJexqxEugSmaf14k64/go-libp2p-peerstore"
+	goprocess "github.com/jbenet/goprocess"
+	pstore "github.com/dms3-p2p/go-p2p-peerstore"
+	mocknet "github.com/dms3-p2p/go-p2p/p2p/net/mock"
 )
 
 func TestRepublish(t *testing.T) {
@@ -26,7 +26,7 @@ func TestRepublish(t *testing.T) {
 	// create network
 	mn := mocknet.New(ctx)
 
-	var nodes []*core.IpfsNode
+	var nodes []*core.Dms3FsNode
 	for i := 0; i < 10; i++ {
 		nd, err := core.NewNode(ctx, &core.BuildCfg{
 			Online: true,
@@ -57,9 +57,9 @@ func TestRepublish(t *testing.T) {
 
 	// have one node publish a record that is valid for 1 second
 	publisher := nodes[3]
-	p := path.FromString("/ipfs/QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn") // does not need to be valid
-	rp := namesys.NewIpnsPublisher(publisher.Routing, publisher.Repo.Datastore())
-	name := "/ipns/" + publisher.Identity.Pretty()
+	p := path.FromString("/dms3fs/QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn") // does not need to be valid
+	rp := namesys.NewDms3NsPublisher(publisher.Routing, publisher.Repo.Datastore())
+	name := "/dms3ns/" + publisher.Identity.Pretty()
 
 	// Retry in case the record expires before we can fetch it. This can
 	// happen when running the test on a slow machine.
@@ -109,7 +109,7 @@ func TestRepublish(t *testing.T) {
 	}
 }
 
-func verifyResolution(nodes []*core.IpfsNode, key string, exp path.Path) error {
+func verifyResolution(nodes []*core.Dms3FsNode, key string, exp path.Path) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	for _, n := range nodes {
@@ -125,7 +125,7 @@ func verifyResolution(nodes []*core.IpfsNode, key string, exp path.Path) error {
 	return nil
 }
 
-func verifyResolutionFails(nodes []*core.IpfsNode, key string) error {
+func verifyResolutionFails(nodes []*core.Dms3FsNode, key string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	for _, n := range nodes {

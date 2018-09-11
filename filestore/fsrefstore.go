@@ -8,17 +8,17 @@ import (
 	"os"
 	"path/filepath"
 
-	pb "github.com/ipfs/go-ipfs/filestore/pb"
+	pb "github.com/dms3-fs/go-dms3-fs/filestore/pb"
 
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	dsns "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/namespace"
-	dsq "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/query"
-	blocks "gx/ipfs/QmWAzSEoqZ6xU6pu8yL8e5WaMb7wtbfbhhN4p1DknUPtr3/go-block-format"
-	posinfo "gx/ipfs/QmXD4grfThQ4LwVoEEfe4dgR7ukmbV9TppM5Q4SPowp7hU/go-ipfs-posinfo"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
-	blockstore "gx/ipfs/QmcmpX42gtDv1fz24kau4wjS9hfwWj5VexWBKgGnWzsyag/go-ipfs-blockstore"
-	dshelp "gx/ipfs/Qmd39D2vUhmPKQA2fgykjo2JXwekHKeJUggmGRpYuVMA2Z/go-ipfs-ds-help"
-	proto "gx/ipfs/QmdxUuburamoF6zF9qjeQC4WYcWGbWuRmdLacMEsW8ioD8/gogo-protobuf/proto"
+	proto "github.com/gogo/protobuf/proto"
+	blocks "github.com/dms3-fs/go-block-format"
+	cid "github.com/dms3-fs/go-cid"
+	ds "github.com/dms3-fs/go-datastore"
+	dsns "github.com/dms3-fs/go-datastore/namespace"
+	dsq "github.com/dms3-fs/go-datastore/query"
+	blockstore "github.com/dms3-fs/go-fs-blockstore"
+	dshelp "github.com/dms3-fs/go-fs-ds-help"
+	posinfo "github.com/dms3-fs/go-fs-posinfo"
 )
 
 // FilestorePrefix identifies the key prefix for FileManager blocks.
@@ -282,7 +282,7 @@ func (f *FileManager) putTo(b *posinfo.FilestoreNode, to putter) error {
 			return ErrFilestoreNotEnabled
 		}
 		if !filepath.HasPrefix(b.PosInfo.FullPath, f.root) {
-			return fmt.Errorf("cannot add filestore references outside ipfs root (%s)", f.root)
+			return fmt.Errorf("cannot add filestore references outside dms3fs root (%s)", f.root)
 		}
 
 		p, err := filepath.Rel(f.root, b.PosInfo.FullPath)

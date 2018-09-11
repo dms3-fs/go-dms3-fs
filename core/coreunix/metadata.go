@@ -1,13 +1,13 @@
 package coreunix
 
 import (
-	core "github.com/ipfs/go-ipfs/core"
-	ft "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
-	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
-	cid "gx/ipfs/QmZFbDTY9jfSBms2MchvYM9oYRbAF19K7Pby47yDBfpPrb/go-cid"
+	cid "github.com/dms3-fs/go-cid"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	dag "github.com/dms3-fs/go-merkledag"
+	ft "github.com/dms3-fs/go-unixfs"
 )
 
-func AddMetadataTo(n *core.IpfsNode, skey string, m *ft.Metadata) (string, error) {
+func AddMetadataTo(n *core.Dms3FsNode, skey string, m *ft.Metadata) (string, error) {
 	c, err := cid.Decode(skey)
 	if err != nil {
 		return "", err
@@ -37,7 +37,7 @@ func AddMetadataTo(n *core.IpfsNode, skey string, m *ft.Metadata) (string, error
 	return mdnode.Cid().String(), nil
 }
 
-func Metadata(n *core.IpfsNode, skey string) (*ft.Metadata, error) {
+func Metadata(n *core.Dms3FsNode, skey string) (*ft.Metadata, error) {
 	c, err := cid.Decode(skey)
 	if err != nil {
 		return nil, err
