@@ -24,7 +24,9 @@ import (
 	measure "github.com/dms3-fs/go-ds-measure"
 	lockfile "github.com/dms3-fs/go-fs-lock"
 	config "github.com/dms3-fs/go-fs-config"
+	idxconfig "github.com/dms3-fs/go-idx-config"
 	serialize "github.com/dms3-fs/go-fs-config/serialize"
+	idxserialize "github.com/dms3-fs/go-idx-config/serialize"
 	util "github.com/dms3-fs/go-fs-util"
 	logging "github.com/dms3-fs/go-log"
 	ma "github.com/dms3-mft/go-multiaddr"
@@ -64,6 +66,8 @@ func (err NoRepoError) Error() string {
 	return fmt.Sprintf("no DMS3FS repo found in %s.\nplease run: 'dms3fs init'", err.Path)
 }
 
+const IdxPath = "index"	// export for idxconfig.go
+
 const apiFile = "api"
 const swarmKeyFile = "swarm.key"
 
@@ -101,6 +105,7 @@ type FSRepo struct {
 	// the same fsrepo path concurrently
 	lockfile io.Closer
 	config   *config.Config
+	idxconfig   *idxconfig.IdxConfig
 	ds       repo.Datastore
 	keystore keystore.Keystore
 	filemgr  *filestore.FileManager
@@ -168,6 +173,10 @@ func open(repoPath string) (repo.Repo, error) {
 		return nil, err
 	}
 
+	if err := r.openIdxConfig(); err != nil {
+		return nil, err
+	}
+
 	if err := r.openDatastore(); err != nil {
 		return nil, err
 	}
@@ -221,6 +230,18 @@ func ConfigAt(repoPath string) (*config.Config, error) {
 	}
 	return serialize.Load(configFilename)
 }
+func IdxConfigAt(repoPath string) (*idxconfig.IdxConfig, error) {
+
+	// packageLock must be held to ensure that the Read is atomic.
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	idxconfigFilename, err := idxconfig.Filename(filepath.Join(repoPath, IdxPath))
+	if err != nil {
+		return nil, err
+	}
+	return idxserialize.Load(idxconfigFilename)
+}
 
 // configIsInitialized returns true if the repo is initialized at
 // provided |path|.
@@ -230,6 +251,16 @@ func configIsInitialized(path string) bool {
 		return false
 	}
 	if !util.FileExists(configFilename) {
+		return false
+	}
+	return true
+}
+func idxconfigIsInitialized(path string) bool {
+	idxconfigFilename, err := idxconfig.Filename(filepath.Join(path, IdxPath))
+	if err != nil {
+		return false
+	}
+	if !util.FileExists(idxconfigFilename) {
 		return false
 	}
 	return true
@@ -247,6 +278,23 @@ func initConfig(path string, conf *config.Config) error {
 	// without reading the config from disk and merging any user-provided keys
 	// that may exist.
 	if err := serialize.WriteConfigFile(configFilename, conf); err != nil {
+		return err
+	}
+
+	return nil
+}
+func initIdxConfig(path string, iconf *idxconfig.IdxConfig) error {
+	if idxconfigIsInitialized(path) {
+		return nil
+	}
+	idxconfigFilename, err := idxconfig.Filename(filepath.Join(path, IdxPath))
+	if err != nil {
+		return err
+	}
+	// initialization is the one time when it's okay to write to the config
+	// without reading the config from disk and merging any user-provided keys
+	// that may exist.
+	if err := idxserialize.WriteConfigFile(idxconfigFilename, iconf); err != nil {
 		return err
 	}
 
@@ -274,7 +322,7 @@ func initSpec(path string, conf map[string]interface{}) error {
 
 // Init initializes a new FSRepo at the given path with the provided config.
 // TODO add support for custom datastores.
-func Init(repoPath string, conf *config.Config) error {
+func Init(repoPath string, conf *config.Config, iconf *idxconfig.IdxConfig) error {
 
 	// packageLock must be held to ensure that the repo is not initialized more
 	// than once.
@@ -286,6 +334,10 @@ func Init(repoPath string, conf *config.Config) error {
 	}
 
 	if err := initConfig(repoPath, conf); err != nil {
+		return err
+	}
+
+	if err := initIdxConfig(repoPath, iconf); err != nil {
 		return err
 	}
 
@@ -381,6 +433,20 @@ func (r *FSRepo) openConfig() error {
 		return err
 	}
 	r.config = conf
+	return nil
+}
+
+// openIdxConfig returns an error if the config file is not present.
+func (r *FSRepo) openIdxConfig() error {
+	idxconfigFilename, err := idxconfig.Filename(filepath.Join(r.path, IdxPath))
+	if err != nil {
+		return err
+	}
+	iconf, err := idxserialize.Load(idxconfigFilename)
+	if err != nil {
+		return err
+	}
+	r.idxconfig = iconf
 	return nil
 }
 
@@ -493,6 +559,21 @@ func (r *FSRepo) Config() (*config.Config, error) {
 	}
 	return r.config, nil
 }
+func (r *FSRepo) IdxConfig() (*idxconfig.IdxConfig, error) {
+
+	// It is not necessary to hold the package lock since the repo is in an
+	// opened state. The package lock is _not_ meant to ensure that the repo is
+	// thread-safe. The package lock is only meant to guard against removal and
+	// coordinate the lockfile. However, we provide thread-safety to keep
+	// things simple.
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	if r.closed {
+		return nil, errors.New("cannot access config, repo not open")
+	}
+	return r.idxconfig, nil
+}
 
 func (r *FSRepo) FileManager() *filestore.FileManager {
 	return r.filemgr
@@ -506,6 +587,31 @@ func (r *FSRepo) BackupConfig(prefix string) (string, error) {
 	defer temp.Close()
 
 	configFilename, err := config.Filename(r.path)
+	if err != nil {
+		return "", err
+	}
+
+	orig, err := os.OpenFile(configFilename, os.O_RDONLY, 0600)
+	if err != nil {
+		return "", err
+	}
+	defer orig.Close()
+
+	_, err = io.Copy(temp, orig)
+	if err != nil {
+		return "", err
+	}
+
+	return orig.Name(), nil
+}
+func (r *FSRepo) BackupIdxConfig(prefix string) (string, error) {
+	temp, err := ioutil.TempFile(filepath.Join(r.path, IdxPath), "config-"+prefix)
+	if err != nil {
+		return "", err
+	}
+	defer temp.Close()
+
+	configFilename, err := idxconfig.Filename(filepath.Join(r.path, IdxPath))
 	if err != nil {
 		return "", err
 	}
@@ -550,6 +656,31 @@ func (r *FSRepo) setConfigUnsynced(updated *config.Config) error {
 	*r.config = *updated // copy so caller cannot modify this private config
 	return nil
 }
+func (r *FSRepo) setIdxConfigUnsynced(updated *idxconfig.IdxConfig) error {
+	configFilename, err := idxconfig.Filename(filepath.Join(r.path, IdxPath))
+	if err != nil {
+		return err
+	}
+	// to avoid clobbering user-provided keys, must read the config from disk
+	// as a map, write the updated struct values to the map and write the map
+	// to disk.
+	var mapconf map[string]interface{}
+	if err := idxserialize.ReadConfigFile(configFilename, &mapconf); err != nil {
+		return err
+	}
+	m, err := idxconfig.ToMap(updated)
+	if err != nil {
+		return err
+	}
+	for k, v := range m {
+		mapconf[k] = v
+	}
+	if err := idxserialize.WriteConfigFile(configFilename, mapconf); err != nil {
+		return err
+	}
+	*r.idxconfig = *updated // copy so caller cannot modify this private config
+	return nil
+}
 
 // SetConfig updates the FSRepo's config.
 func (r *FSRepo) SetConfig(updated *config.Config) error {
@@ -559,6 +690,14 @@ func (r *FSRepo) SetConfig(updated *config.Config) error {
 	defer packageLock.Unlock()
 
 	return r.setConfigUnsynced(updated)
+}
+func (r *FSRepo) SetIdxConfig(updated *idxconfig.IdxConfig) error {
+
+	// packageLock is held to provide thread-safety.
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	return r.setIdxConfigUnsynced(updated)
 }
 
 // GetConfigKey retrieves only the value of a particular key.
@@ -576,6 +715,24 @@ func (r *FSRepo) GetConfigKey(key string) (interface{}, error) {
 	}
 	var cfg map[string]interface{}
 	if err := serialize.ReadConfigFile(filename, &cfg); err != nil {
+		return nil, err
+	}
+	return common.MapGetKV(cfg, key)
+}
+func (r *FSRepo) GetIdxConfigKey(key string) (interface{}, error) {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	if r.closed {
+		return nil, errors.New("repo is closed")
+	}
+
+	filename, err := idxconfig.Filename(filepath.Join(r.path, IdxPath))
+	if err != nil {
+		return nil, err
+	}
+	var cfg map[string]interface{}
+	if err := idxserialize.ReadConfigFile(filename, &cfg); err != nil {
 		return nil, err
 	}
 	return common.MapGetKV(cfg, key)
@@ -663,6 +820,74 @@ func (r *FSRepo) SetConfigKey(key string, value interface{}) error {
 	}
 	return r.setConfigUnsynced(conf) // TODO roll this into this method
 }
+func (r *FSRepo) SetIdxConfigKey(key string, value interface{}) error {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	if r.closed {
+		return errors.New("repo is closed")
+	}
+
+	filename, err := idxconfig.Filename(filepath.Join(r.path, IdxPath))
+	if err != nil {
+		return err
+	}
+	var mapconf map[string]interface{}
+	if err := idxserialize.ReadConfigFile(filename, &mapconf); err != nil {
+		return err
+	}
+
+	// Get the type of the value associated with the key
+	oldValue, err := common.MapGetKV(mapconf, key)
+	ok := true
+	if err != nil {
+		// key-value does not exist yet
+		switch v := value.(type) {
+		case string:
+			value, err = strconv.ParseBool(v)
+			if err != nil {
+				value, err = strconv.Atoi(v)
+				if err != nil {
+					value, err = strconv.ParseFloat(v, 32)
+					if err != nil {
+						value = v
+					}
+				}
+			}
+		default:
+		}
+	} else {
+		switch oldValue.(type) {
+		case bool:
+			value, ok = value.(bool)
+		case int:
+			value, ok = value.(int)
+		case float32:
+			value, ok = value.(float32)
+		case string:
+			value, ok = value.(string)
+		default:
+		}
+		if !ok {
+			return fmt.Errorf("wrong config type, expected %T", oldValue)
+		}
+	}
+
+	if err := common.MapSetKV(mapconf, key, value); err != nil {
+		return err
+	}
+
+	// This step doubles as to validate the map against the struct
+	// before serialization
+	conf, err := idxconfig.FromMap(mapconf)
+	if err != nil {
+		return err
+	}
+	if err := idxserialize.WriteConfigFile(filename, mapconf); err != nil {
+		return err
+	}
+	return r.setIdxConfigUnsynced(conf) // TODO roll this into this method
+}
 
 // Datastore returns a repo-owned datastore. If FSRepo is Closed, return value
 // is undefined.
@@ -712,5 +937,5 @@ func IsInitialized(path string) bool {
 // isInitializedUnsynced reports whether the repo is initialized. Caller must
 // hold the packageLock.
 func isInitializedUnsynced(repoPath string) bool {
-	return configIsInitialized(repoPath)
+	return configIsInitialized(repoPath) && idxconfigIsInitialized(repoPath)
 }

@@ -12,6 +12,7 @@ import (
 	name "github.com/dms3-fs/go-dms3-fs/core/commands/name"
 	ocmd "github.com/dms3-fs/go-dms3-fs/core/commands/object"
 	unixfs "github.com/dms3-fs/go-dms3-fs/core/commands/unixfs"
+	idx "github.com/dms3-fs/go-dms3-fs/core/commands/index"
 
 	"github.com/dms3-fs/go-fs-cmdkit"
 	"github.com/dms3-fs/go-fs-cmds"
@@ -115,6 +116,33 @@ var rootSubcommands = map[string]*cmds.Command{
 	"files":     FilesCmd,
 	"filestore": FileStoreCmd,
 	"get":       GetCmd,
+	//"ifxconfig": lgc.NewCommand(IdxConfigCmd),
+	//"index": 	 idx.IndexCmd,
+	"index": 	&cmds.Command{
+		Helptext: cmdkit.HelpText{
+                Tagline: "Interact with DMS3FS index repositories.",
+                ShortDescription: `
+'dms3fs index' is a command used to manipulate DMS3FS index repositories.
+`,
+        },
+
+		Subcommands: map[string]*cmds.Command{
+			"config": lgc.NewCommand(IdxConfigCmd),
+			"mkidx": idx.MakeIndexCmd,
+			"mkdoc": idx.MakeDocumentCmd,
+			"addoc": idx.AddDocumentCmd,
+			"rmdoc": idx.RemoveDocumentCmd,
+			"publish": idx.PublishIndexCmd,
+
+			"ls": idx.ListIndexCmd,
+			"stat": idx.NotyetIndexCmd,
+			"show": idx.NotyetIndexCmd,
+			"start": idx.NotyetIndexCmd,
+			"stop": idx.NotyetIndexCmd,
+			"restart": idx.NotyetIndexCmd,
+			"recover": idx.NotyetIndexCmd,
+		},
+	},
 	"pubsub":    PubsubCmd,
 	"repo":      RepoCmd,
 	"stats":     StatsCmd,
@@ -162,6 +190,13 @@ var rootROSubcommands = map[string]*cmds.Command{
 		},
 	},
 	"get": GetCmd,
+	"index": &cmds.Command{
+		Subcommands: map[string]*cmds.Command{
+			"ls": idx.ListIndexCmd,
+			"stat": idx.NotyetIndexCmd,
+			"show": idx.NotyetIndexCmd,
+		},
+	},
 	"dns": lgc.NewCommand(DNSCmd),
 	"ls":  lgc.NewCommand(LsCmd),
 	"name": &cmds.Command{

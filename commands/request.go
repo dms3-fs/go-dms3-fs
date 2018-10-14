@@ -14,6 +14,7 @@ import (
 	"github.com/dms3-fs/go-fs-cmdkit/files"
 	"github.com/dms3-fs/go-fs-cmds"
 	config "github.com/dms3-fs/go-fs-config"
+	idxconfig "github.com/dms3-fs/go-idx-config"
 )
 
 type Context struct {
@@ -23,6 +24,8 @@ type Context struct {
 
 	config     *config.Config
 	LoadConfig func(path string) (*config.Config, error)
+	idxconfig     *idxconfig.IdxConfig
+	LoadIdxConfig func(path string) (*idxconfig.IdxConfig, error)
 
 	api           coreiface.CoreAPI
 	node          *core.Dms3FsNode
@@ -38,8 +41,30 @@ func (c *Context) GetConfig() (*config.Config, error) {
 			return nil, errors.New("nil LoadConfig function")
 		}
 		c.config, err = c.LoadConfig(c.ConfigRoot)
+		if err != nil {
+			return c.config, err
+		}
+		if c.LoadIdxConfig == nil {
+			return nil, errors.New("nil LoadIdxConfig function")
+		}
+		c.idxconfig, err = c.LoadIdxConfig(c.ConfigRoot)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return c.config, err
+}
+
+// internal method called from GetContext above
+func (c *Context) getIdxConfig() (*idxconfig.IdxConfig, error) {
+	var err error
+	if c.idxconfig == nil {
+		if c.LoadIdxConfig == nil {
+			return nil, errors.New("nil LoadIdxConfig function")
+		}
+		c.idxconfig, err = c.LoadIdxConfig(c.ConfigRoot)
+	}
+	return c.idxconfig, err
 }
 
 // GetNode returns the node of the current Command execution

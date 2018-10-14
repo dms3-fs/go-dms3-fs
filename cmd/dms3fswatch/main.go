@@ -10,6 +10,7 @@ import (
 	"syscall"
 
     config "github.com/dms3-fs/go-dms3-fs-config"
+	idxconfig "github.com/dms3-fs/go-dms3-idx-config"
     commands "github.com/dms3-fs/go-dms3-fs/commands"
     core "github.com/dms3-fs/go-dms3-fs/core"
     corehttp "github.com/dms3-fs/go-dms3-fs/core/corehttp"
@@ -192,6 +193,9 @@ func cmdCtx(node *core.Dms3FsNode, repoPath string) commands.Context {
 		ConfigRoot: repoPath,
 		LoadConfig: func(path string) (*config.Config, error) {
 			return node.Repo.Config()
+		},
+		LoadIdxConfig: func(path string) (*idxconfig.IdxConfig, error) {
+			return node.Repo.IdxConfig()
 		},
 		ConstructNode: func() (*core.Dms3FsNode, error) {
 			return node, nil

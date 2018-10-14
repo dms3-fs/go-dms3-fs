@@ -33,6 +33,11 @@ func (api *CoreAPI) Unixfs() coreiface.UnixfsAPI {
 	return (*UnixfsAPI)(api)
 }
 
+// IndexRepo returns the IndexRepoAPI interface implementation backed by the go-dms3fs node
+func (api *CoreAPI) Index() coreiface.IndexAPI {
+	return (*IndexAPI)(api)
+}
+
 // Block returns the BlockAPI interface implementation backed by the go-dms3fs node
 func (api *CoreAPI) Block() coreiface.BlockAPI {
 	return (*BlockAPI)(api)

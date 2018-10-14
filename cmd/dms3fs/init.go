@@ -19,6 +19,7 @@ import (
     "github.com/dms3-fs/go-fs-cmdkit"
     "github.com/dms3-fs/go-fs-cmds"
     "github.com/dms3-fs/go-fs-config"
+	idxconfig "github.com/dms3-fs/go-idx-config"
 )
 
 const (
@@ -83,6 +84,7 @@ environment variable:
 		nBitsForKeypair, _ := req.Options["bits"].(int)
 
 		var conf *config.Config
+		var iconf *idxconfig.IdxConfig
 
 		f := req.Files
 		if f != nil {
@@ -97,6 +99,18 @@ environment variable:
 				res.SetError(err, cmdkit.ErrNormal)
 				return
 			}
+
+			iconfFile, err := f.NextFile()
+			if err != nil {
+				res.SetError(err, cmdkit.ErrNormal)
+				return
+			}
+
+			iconf = &idxconfig.IdxConfig{}
+			if err := json.NewDecoder(iconfFile).Decode(iconf); err != nil {
+				res.SetError(err, cmdkit.ErrNormal)
+				return
+			}
 		}
 
 		profile, _ := req.Options["profile"].(string)
@@ -106,7 +120,7 @@ environment variable:
 			profiles = strings.Split(profile, ",")
 		}
 
-		if err := doInit(os.Stdout, cctx.ConfigRoot, empty, nBitsForKeypair, profiles, conf); err != nil {
+		if err := doInit(os.Stdout, cctx.ConfigRoot, empty, nBitsForKeypair, profiles, conf, iconf); err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
 			return
 		}
@@ -123,10 +137,10 @@ func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
 		profiles = strings.Split(profile, ",")
 	}
 
-	return doInit(out, repoRoot, false, nBitsForKeypairDefault, profiles, nil)
+	return doInit(out, repoRoot, false, nBitsForKeypairDefault, profiles, nil, nil)
 }
 
-func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, confProfiles []string, conf *config.Config) error {
+func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, confProfiles []string, conf *config.Config, iconf *idxconfig.IdxConfig) error {
 	if _, err := fmt.Fprintf(out, "initializing DMS3FS node at %s\n", repoRoot); err != nil {
 		return err
 	}
@@ -147,6 +161,14 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 		}
 	}
 
+	if iconf == nil {
+		var err error
+		iconf, err = idxconfig.Init(out)
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, profile := range confProfiles {
 		transformer, ok := config.Profiles[profile]
 		if !ok {
@@ -158,7 +180,7 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 		}
 	}
 
-	if err := fsrepo.Init(repoRoot, conf); err != nil {
+	if err := fsrepo.Init(repoRoot, conf, iconf); err != nil {
 		return err
 	}
 

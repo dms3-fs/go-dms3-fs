@@ -14,7 +14,13 @@
 //   │   └── dms3fs-daemon.memprof
 //   ├── datastore/
 //   ├── repo.lock                <------ protects datastore/ and config
-//   └── version
+//   ├── version
+//   └── index/
+//       ├── config
+//       └── <ns>-<app>-<win>-<area>-<cat>-<off>/
+//           ├── corpus/
+//           └── base/
+//
 package fsrepo
 
 // TODO prevent multiple daemons from running

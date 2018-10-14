@@ -10,6 +10,7 @@ import (
 	datastore "github.com/dms3-fs/go-datastore"
 	syncds "github.com/dms3-fs/go-datastore/sync"
 	config "github.com/dms3-fs/go-fs-config"
+	idxconfig "github.com/dms3-fs/go-idx-config"
 	dms3p2p "github.com/dms3-p2p/go-p2p"
 	host "github.com/dms3-p2p/go-p2p-host"
 	peer "github.com/dms3-p2p/go-p2p-peer"
@@ -48,6 +49,9 @@ func MockCmdsCtx() (commands.Context, error) {
 			PeerID: p.String(),
 		},
 	}
+	iconf := idxconfig.IdxConfig{
+		},
+	}
 
 	r := &repo.Mock{
 		D: syncds.MutexWrap(datastore.NewMapDatastore()),
@@ -66,6 +70,9 @@ func MockCmdsCtx() (commands.Context, error) {
 		ConfigRoot: "/tmp/.mockdms3fsconfig",
 		LoadConfig: func(path string) (*config.Config, error) {
 			return &conf, nil
+		},
+		LoadIdxConfig: func(path string) (*idxconfig.IdxConfig, error) {
+			return &iconf, nil
 		},
 		ConstructNode: func() (*core.Dms3FsNode, error) {
 			return node, nil

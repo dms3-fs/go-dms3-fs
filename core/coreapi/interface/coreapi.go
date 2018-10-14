@@ -13,6 +13,9 @@ type CoreAPI interface {
 	// Unixfs returns an implementation of Unixfs API
 	Unixfs() UnixfsAPI
 
+	// Index returns an implementation of Index API
+	Index() IndexAPI
+
 	// Block returns an implementation of Block API
 	Block() BlockAPI
 

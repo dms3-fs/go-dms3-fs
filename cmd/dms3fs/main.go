@@ -29,6 +29,7 @@ import (
     "github.com/dms3-fs/go-fs-cmds/cli"
     "github.com/dms3-fs/go-fs-cmds/http"
     "github.com/dms3-fs/go-fs-config"
+	idxconfig "github.com/dms3-fs/go-idx-config"
     u "github.com/dms3-fs/go-fs-util"
     logging "github.com/dms3-fs/go-log"
     loggables "github.com/dms3-p2p/go-p2p-loggables"
@@ -108,6 +109,7 @@ func mainRet() int {
 		return &oldcmds.Context{
 			ConfigRoot: repoPath,
 			LoadConfig: loadConfig,
+			LoadIdxConfig: loadIdxConfig,
 			ReqLog:     &oldcmds.ReqLog{},
 			ConstructNode: func() (n *core.Dms3FsNode, err error) {
 				if req == nil {
@@ -287,6 +289,9 @@ func getRepoPath(req *cmds.Request) (string, error) {
 
 func loadConfig(path string) (*config.Config, error) {
 	return fsrepo.ConfigAt(path)
+}
+func loadIdxConfig(path string) (*idxconfig.IdxConfig, error) {
+	return fsrepo.IdxConfigAt(path)
 }
 
 // startProfiling begins CPU profiling and returns a `stop` function to be

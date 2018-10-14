@@ -65,6 +65,7 @@ func init() {
 		"mem":      MemDatastoreConfig,
 		"log":      LogDatastoreConfig,
 		"measure":  MeasureDatastoreConfig,
+		"indexds":  IndexdsDatastoreConfig,
 	}
 }
 
@@ -242,6 +243,53 @@ func (c *leveldsDatastoreConfig) DiskSpec() DiskSpec {
 }
 
 func (c *leveldsDatastoreConfig) Create(path string) (repo.Datastore, error) {
+	p := c.path
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(path, p)
+	}
+
+	return levelds.NewDatastore(p, &levelds.Options{
+		Compression: c.compression,
+	})
+}
+
+type indexdsDatastoreConfig struct {
+	path        string
+	compression ldbopts.Compression
+}
+
+// IndexdsDatastoreConfig returns a indexds DatastoreConfig from a spec
+func IndexdsDatastoreConfig(params map[string]interface{}) (DatastoreConfig, error) {
+	var c indexdsDatastoreConfig
+	var ok bool
+
+	c.path, ok = params["path"].(string)
+	if !ok {
+		return nil, fmt.Errorf("'path' field is missing or not string")
+	}
+
+	switch cm := params["compression"].(string); cm {
+	case "none":
+		c.compression = ldbopts.NoCompression
+	case "snappy":
+		c.compression = ldbopts.SnappyCompression
+	case "":
+		c.compression = ldbopts.DefaultCompression
+	default:
+		return nil, fmt.Errorf("unrecognized value for compression: %s", cm)
+	}
+
+	return &c, nil
+}
+
+func (c *indexdsDatastoreConfig) DiskSpec() DiskSpec {
+	return map[string]interface{}{
+		"type": "indexds",
+		"path": c.path,
+	}
+}
+
+func (c *indexdsDatastoreConfig) Create(path string) (repo.Datastore, error) {
 	p := c.path
 	if !filepath.IsAbs(p) {
 		p = filepath.Join(path, p)
