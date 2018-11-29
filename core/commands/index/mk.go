@@ -1,34 +1,67 @@
-
 package index
+
 import (
-	"strings"
-	"context"
 	"errors"
 	"fmt"
 	"io"
-	"time"
 	"os"
-	"encoding/xml"
-//	"reflect"
-	"bytes"
-	"path/filepath"
+    "path"
+    "path/filepath"
+	"strconv"
+	"strings"
+	"time"
 
-    util "github.com/dms3-fs/go-fs-util"
-	"github.com/facebookgo/atomicfile"
-
-	core "github.com/dms3-fs/go-dms3-fs/core"
+	blockservice "github.com/dms3-fs/go-blockservice"
+	bstore "github.com/dms3-fs/go-fs-blockstore"
+	cid "github.com/dms3-fs/go-cid"
+	cidutil "github.com/dms3-fs/go-cidutil"
 	cmdenv "github.com/dms3-fs/go-dms3-fs/core/commands/cmdenv"
-	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
-
-	cmds "github.com/dms3-fs/go-fs-cmds"
 	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
-    idxconfig "github.com/dms3-fs/go-idx-config"
-	path "github.com/dms3-fs/go-path"
+	cmds "github.com/dms3-fs/go-fs-cmds"
+	core "github.com/dms3-fs/go-dms3-fs/core"
+	coreiface "github.com/dms3-fs/go-dms3-fs/core/coreapi/interface"
+	coreunix "github.com/dms3-fs/go-dms3-fs/core/coreunix"
+	dag "github.com/dms3-fs/go-merkledag"
+	dagtest "github.com/dms3-fs/go-merkledag/test"
+    dms3ld "github.com/dms3-fs/go-ld-format"
+	ds "github.com/dms3-fs/go-datastore"
+	e "github.com/dms3-fs/go-dms3-fs/core/commands/e"
+	files "github.com/dms3-fs/go-fs-cmdkit/files"
+	filestore "github.com/dms3-fs/go-dms3-fs/filestore"
+	ft "github.com/dms3-fs/go-unixfs"
+	idxlfs "github.com/dms3-fs/go-dms3-fs/core/coreindex/lfs"
+	idxkvs "github.com/dms3-fs/go-dms3-fs/core/coreindex/kvs"
+	idxufs "github.com/dms3-fs/go-dms3-fs/core/coreindex/ufs"
+	mfs "github.com/dms3-fs/go-mfs"
+	mh "github.com/dms3-mft/go-multihash"
+	offline "github.com/dms3-fs/go-fs-exchange-offline"
+	dms3fspath "github.com/dms3-fs/go-path"
+	pb "github.com/cheggaaa/pb"
+	"github.com/dms3-fs/go-dms3-fs/pin"
+	resolver "github.com/dms3-fs/go-path/resolver"
+	uio "github.com/dms3-fs/go-unixfs/io"
 )
 
-type RepoPath struct{
-	path string
-}
+// ErrDepthLimitExceeded indicates that the max depth has been exceeded.
+var ErrDepthLimitExceeded = fmt.Errorf("depth limit exceeded")
+
+const (
+	// cli options
+	quietOptionName       = "quiet"
+	progressOptionName    = "progress"
+	kindOptionName        = "kind"
+	nameOptionName		  = "name"
+	metaOptionName		  = "meta"
+	dataOptionName		  = "data"
+	lengthOptionName	  = "length"
+	offsetOptionName	  = "offset"
+	// internal properties
+	// - hack to pass parameters from the command Run to PostRun function
+	infoClassName		  = "info-class"
+	createdAtName		  = "created-at"
+)
+
+const adderOutChanSize = 8
 
 var MakeIndexCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
@@ -37,17 +70,17 @@ var MakeIndexCmd = &cmds.Command{
 Make a new searchable repository set.
 `,
 		LongDescription: `
-Make a new searchable infostore or infospace repository set for
+Make a new searchable infostore or metastore repository set for
 documents of a similar kind. The repository kind is named using
 a locally unique key ex: blog.
 
 Each created repository set can be customized with specific schema
 fields to expose structure of documents it will host. The exposed
-structure can be used to refine search with the supported robust
+structure can be used to refine search with the robust supported
 query language.
 
 The set of fields used for a specifc kind key can be customized
-using the repository configure commands.
+using the repository configure command.
 
 	dms3fs index config show    # to show index configuration
 	dms3fs index config --json Metadata.Kind \
@@ -60,15 +93,13 @@ using the repository configure commands.
 Use the create document command to make an empty document template
 with all the fields pre-generated.
 
-	dms3fs index mkdoc -k=blog -x > b.xml # edit document
+	dms3fs index mkdoc -k=blog > b.xml    # edit document
 	dms3fs index addoc b.xml <path>       # add blog to reposet
 
-Use --xml option to convey repository input document format.
-
 The first form of the command (without path argument) is used to
-create and infostore repository set. The second form of the
-command that includes a path argument is used to create an infospace
-repository set. An infospace repository stores metadata information
+create an infostore repository set. The second form of the
+command that includes a path argument is used to create an metastore
+repository set. An metastore repository stores metadata information
 for documents contained in an associated infostore repository set
 specified by the path.
 
@@ -76,14 +107,16 @@ specified by the path.
 	},
 
 	Arguments: []cmdkit.Argument{
-		cmdkit.StringArg("dms3fs-path", false, false, "path to associated repository."),
+		cmdkit.StringArg("infostores", false, true, "dms3fs path to associated repository.").EnableStdin(),
 	},
 	Options: []cmdkit.Option{
-		cmdkit.StringOption("kind", "k", "keyword for kind of content, ex: \"blog\" ."),
-		cmdkit.BoolOption("xml", "x", "xml encoding format."),
-		cmdkit.BoolOption("quiet", "q", "Write just hashes of created object."),
+		cmdkit.StringOption(kindOptionName, "k", "keyword for kind of content, ex: \"blog\" ."),
+		cmdkit.StringOption(nameOptionName, "n", "reposet name, ex: \"foodblog\" ."),
+		cmdkit.BoolOption(quietOptionName, "q", "Write just hashes of created object.").WithDefault(false),
+		cmdkit.BoolOption(progressOptionName, "p", "Stream progress data.").WithDefault(true),
 	},
 	Run: func(req *cmds.Request, res cmds.ResponseEmitter, env cmds.Environment) {
+
 		n, err := cmdenv.GetNode(env)
 		if err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
@@ -94,874 +127,646 @@ specified by the path.
 		// process and verify options and arguments
 		//
 
-		//log.Error("Running index ls : ", err)
-		log.Debugf("Running command request path %s", req.Path)
-
-		mkopts := new(makeindexOpts)
-
-		mkopts.key, _ = req.Options["kind"].(string)
-		if mkopts.key == "" {
+		kopt, _ := req.Options[kindOptionName].(string)
+		if kopt == "" {
 			res.SetError(errors.New("kind of content key must be specified."), cmdkit.ErrNormal)
 			return
-		}
-		log.Debugf("kind option value %s", mkopts.key)
-
-		x, _ := req.Options["xml"].(bool)
-		if !x {
-			res.SetError(errors.New("encoding format must be specified."), cmdkit.ErrNormal)
-			return
 		} else {
-			mkopts.enc = "xml"
+			log.Debugf("kind option value %s", kopt)
 		}
-		log.Debugf("xml format option %s", mkopts.enc)
 
-		ctx := req.Context
-
-/*
-		p, err := path.ParsePath(p)
-		if err != nil {
-			res.SetError(err, cmdkit.ErrNormal)
+		nopt, _ := req.Options[nameOptionName].(string)
+		if nopt == "" {
+			res.SetError(errors.New("reposet name must be specified."), cmdkit.ErrNormal)
 			return
 		}
-*/
-		var p path.Path
+		log.Debugf("reposet name option value %s", nopt)
 
-		//
-		// check repo does not exists
-		//	- in kvstore and local filesystem
- 		// make the parameters file - on local filesystem
-		// add it into Dms3Fs
-		// create LD object
-		// track in the kv store
-		//	- link infospace to infostore
- 		//
+        if len(req.Arguments) < 1 {
+			req.SetOption(infoClassName, "infostore")
+        } else {
+			req.SetOption(infoClassName, "metastore")
+			// metastore to infostore associatioins
+			paths := req.Arguments
+	        out := make([]*cid.Cid, len(paths))
 
-/*
-		1. DMFS3 UnixFS File - Parameters
-		    A parameters file is generated when creating a new repository
-			using index configuration data. The parameters file is stored
-			in the DMS3FS. The parameters file is shared by all repos in a
-			reposet.
+	        r := &resolver.Resolver{
+	                DAG:         n.DAG,
+	                ResolveOnce: uio.ResolveUnixfsOnce,
+	        }
+	        for i, fpath := range paths {
+				p, err := dms3fspath.ParsePath(fpath)
+				if err != nil {
+					res.SetError(errors.New(fmt.Sprintf("failed to parse path to infostore. error %s", err)), cmdkit.ErrNormal)
+					return
+				}
 
-			- create on local fs, the add like:
-			dms3fs add /home/tavit/.dms3-fs/index/reposet/blog/w1538751225-a1-c1-o0/params
-			added QmWXToC1zwjJTqCS1A8g7VgGeTJDY2PaANeZwMyH8awZfF params
-			 3.05 KiB / 3.05 KiB [==================================] 100.00%
+				dagnode, err := core.Resolve(n.Context(), n.Namesys, r, p)
+				if err != nil {
+					res.SetError(errors.New(fmt.Sprintf("mkidx: %s", err)), cmdkit.ErrNormal)
+					return
+				}
+				out[i] = dagnode.Cid()
+				fmt.Printf("infostore[%v] cid %s\n", i, dagnode.Cid().String())
 
-		2. DAG Object - Link to parameters
-		    A DAG object stores a link to the parameters file added to
-			the DMS3FS. This helps locate repository metadata when
-			expanding the reposet, and when publishing information.
+				pn, ok := dagnode.(*dag.ProtoNode)
+			    if !ok {
+					res.SetError(errors.New(fmt.Sprintf("mkidx: invalid dag node %s", dagnode.Cid().String())), cmdkit.ErrNormal)
+					return
+			    }
 
-			works like:
-			dms3fs object put /home/tavit/Work/dapp/dms3/repo.json
-			added QmNR4hpeHBi61fNw2xGX56cewDS9AzRdTF3fLNVNdPTUop
-			    ```go
-			{
-			    "Data": "repar",
-			    "Links": [ {
-			        "Name": "params",
-			        "Hash": "QmWXToC1zwjJTqCS1A8g7VgGeTJDY2PaANeZwMyH8awZfF",
-			        "Size": 3139
-			    } ]
-			}
-			```
+				// make index repository root with this root node
+				sr, err := idxufs.NewStoreRoot(n.Context(), n.DAG, pn)
+			    if err != nil {
+					res.SetError(errors.New(fmt.Sprintf("mkidx: failed to create NewStoreRoot with error %s", err)), cmdkit.ErrNormal)
+					return
+			    }
 
-		3. Index Datastore Entry - Reposet properties
-		    The set of properties of a reposet is stored under a unique Key
-			in the DMS3FS index datastore. The properties are JSON encoded and
-			stored using the key name convention. Key: "_class_/_kind_", where
-			_class_ is either "infostore" of "infospace", and _kind_ is a
-			source provided key component that describes the kind of repository.
+				// make new reposetprops type
+				rps := idxufs.NewReposetProps()
 
-			    ```go
-			type reposetProps struct {
-			    Kind: string,       // reposet kind
-			    CreatedAt: uint64,  // creation (Unix) time (seconds since 1970 epoch)
-			    MaxAreas: uint8,    // max tag2 shards, default: 64
-			    MaxCats: uint8,     // max tag3 shards, default: 64
-			    MaxDocs: uint64,    // max # of documents in repo kind, DEFAULT: 50m
-			    Params: *Cid,       // cid of reposet paramaters file
-			    RepoKey: []string,  // key list of repos in reposet
-			}
-			```
+				// create repoprops from store root
+			    ri, err := sr.GetProps("reposetprops", rps)
+			    if err != nil {
+					res.SetError(errors.New(fmt.Sprintf("mkidx: failed to get reposetprops with error %s", err)), cmdkit.ErrNormal)
+					return
+			    }
 
-		4. Index Datastore Entry - Repo properties
-		    The set of properties of a repo is stored under a unique Key in
-			the DMS3FS index datastore. The properties are JSON encoded and
-			stored using the key name convention. Key: "_class_/_kind_/_n_",
-			where _n_ is the key list index of the repo in the reposet.
+			    rps, ok = ri.(idxufs.ReposetProps)
+			    if !ok {
+					res.SetError(errors.New(fmt.Sprintf("mkidx: invalid reposetprops.", err)), cmdkit.ErrNormal)
+					return
+			    }
+	        }
+			//res.SetError(errors.New("test done"), cmdkit.ErrNormal)
+			//return
+        }
+		log.Debugf("infoclass is %s", req.Options[infoClassName].(string))
 
-			works like:
-			dms3fs object put /home/tavit/Work/dapp/dms3/reposet.json
-			added QmNPtzjKHpadJvzxEhEB5RjQwuPBGhXzvQ8aXYA1uLGpP7
 
-			    ```go
-			type repoProps struct {
-			    Suffix: {           // repository folder name suffix
-			        Offset: 0,      // shard tag1, repo create relative time,
-			                        // seconds since reposet creation
-			        Area: 0,        // shard tag2
-			        Category: 0,    // shard tag3
-			    },
-			    Docs: 0,            // # of documents in the repo
-			}
-			```
-
-		5. Local filesystem - Path to repository
-		    A path is created when creating a new repository that contains
-			files and sub folders used by the indexer. A copy of the
-			parameters file is placed in the local file system for the
-			index server to read its configuration from. The path of a
-			repository is composed of the following components:
-			    _root_ - index repository root
-			    _class_ - repository class
-			    _kind_ - repository kind
-			    _shard_ - repository name
-
-		    For example, the very first "blog" kind repository created
-			at Unix time of 1538751225 (seconds since 1970 epoch) will
-			create the following folder structure by default:
-
-			    ```bash
-			~/.dms3-fs/index/infostore/blog/w1538751225-o0-a1-c1/params
-			~/.dms3-fs/index/infostore/blog/w1538751225-o0-a1-c1/index/
-			~/.dms3-fs/index/infostore/blog/w1538751225-o0-a1-c1/corpus/
-			~/.dms3-fs/index/infostore/blog/w1538751225-o0-a1-c1/metadata/
-			}
-			```
-*/
-
-		cfg, err := n.Repo.IdxConfig()
+ 		// load the index configuration
+		icfg, err := n.Repo.IdxConfig()
 		if err != nil {
 			res.SetError(errors.New("could not load index config."), cmdkit.ErrNormal)
 			return
 		}
 
-		output, err := makeRepo(ctx, n, cfg, p, mkopts)
-		if err != nil {
+		// check repo kind is configured
+		if found, err := idxlfs.IsKindConfigured(icfg, kopt); err != nil {
+			res.SetError(err, cmdkit.ErrNormal)
+			return
+		} else {
+			if !found {
+				res.SetError(fmt.Sprintf("metadata not configured for repo kind %s\n", kopt), cmdkit.ErrNormal)
+				return
+			}
+		}
+
+		// check repo does not already exists on local filesystem
+		var rpath string
+
+		if found, p, err := idxlfs.ReposetExists(kopt, nopt); err != nil {
+			res.SetError(err, cmdkit.ErrNormal)
+			return
+		} else {
+			if found {
+				res.SetError(fmt.Sprintf("named reposet path already exists %s\n", rpath), cmdkit.ErrNormal)
+				return
+			} else {
+				rpath = p
+			}
+		}
+
+		// check repo does not already exists on in kvstore
+		var key ds.Key
+
+		iopt, _ := req.Options[infoClassName].(string)
+
+		// set the KV store to use
+		idxkvs.InitIndexKVStore(n.Repo.Datastore())
+		dstore := idxkvs.GetIndexKVStore()
+
+		if key, err = idxkvs.GetRepoSetKey(iopt, kopt, nopt); err != nil {
+			res.SetError(err, cmdkit.ErrNormal)
+			return
+        } else {
+			if _, err = dstore.Get(key); err == nil {
+				res.SetError(fmt.Sprintf("named reposet key already exists %s\n", key), cmdkit.ErrNormal)
+				return
+			}
+		}
+		log.Debugf("reposet key is %v\n", key)
+
+		// now we are ready to configure the reposet
+
+		// create the params file on local filesystem
+		var paramsfile, reponame string
+		if fn, rn, ct, err := idxlfs.MakeRepo(icfg, rpath, kopt); err != nil {
+			res.SetError(err, cmdkit.ErrNormal)
+			return
+		} else {
+			paramsfile = fn
+			reponame = rn
+			req.SetOption(createdAtName, fmt.Sprintf("%s", ct.UTC().Format(time.RFC3339)))
+			log.Debugf("reposet create time %s", req.Options[createdAtName].(string))
+		}
+
+		// add params file into Dms3Fs
+		if err := addParamsFile(req, res, env, n, paramsfile, reponame); err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
 			return
 		}
 
-		cmds.EmitOnce(res, output)
-
 	},
-	Encoders: cmds.EncoderMap{
-		cmds.Text: cmds.MakeEncoder(func(req *cmds.Request, w io.Writer, v interface{}) error {
-			repoPath, ok := v.(*RepoPath)
-			if !ok {
-				return e.TypeErr(repoPath, v)
-			}
-
-			_, err := fmt.Fprintf(w, "%v\n", repoPath.path)
-			return err
-		}),
-	},
-	Type: RepoPath{},
-}
-
-type makeindexOpts struct {
-	key string
-	enc string
-}
-
-func makeRepo(ctx context.Context, n *core.Dms3FsNode, cfg interface{}, ref path.Path, opts *makeindexOpts) (*RepoPath, error) {
-
-	var err error
-	var found bool
-	var kind, reposet, filename string
-
-	if kind = opts.key; kind == "" {
-		err = errors.New("repo kind must not be null.")
-		return nil, err
-	}
-
-	if reposet, err = reposetName(kind); err != nil {
-		return nil, err
-	}
-
-	if reposetExists(reposet) {
-		err = errors.New(fmt.Sprintf("repo kind \"%s\" already exists.", kind))
-		return nil, err
-	}
-
-	if filename, err = repoParamFilename(reposet); err != nil {
-		return nil, err
-	}
-
-	// make path to repo root and indexer params
-	found, err = writeParamFile(filename, cfg, opts)
-
-	// make subfolders after creating params file, which also create path to repo root
-	if err = makeRepoSubDirs(filename); err != nil {
-		return nil, err
-	}
-
-	if err != nil {
-		return nil, err
-	} else {
-		if found {
-			return &RepoPath{
-				path: "success",
-				}, nil
-		} else {
-			return &RepoPath{
-				path: "failed to make index repository, please use \"dms3fs index config\" command to verify configure.",
-			}, nil
-		}
-	}
-}
-
-func reposetExists(reposet string) bool {
-	//
-	// TODO: check both kvstore and params file in local fs
-	//
-	if !util.FileExists(reposet) {
-			return false
-	}
-	return true
-}
-
-// repoParamFilename returns the index repository parameters filename for a specified reposet.
-func reposetName(kind string) (reposet string, err error) {
-
-	//
-	// local filesystem reposet path.
-	//
-	// index <repo root>, cfg parameter Indexer.Path, must be relative path
-	// 	  - index
-	// reposet root
-	// 	  - index/reposet
-	// reposet name
-	//	  - <kind>: string,    // repository kind (ex: blog)
-	// reposet root folder
-	// 	  - index/reposet/<kind>
-	//
-	var rootpath string
-
-	if rootpath, err = idxconfig.PathRoot(); err != nil {
-		return reposet, err
-	}
-
-	reposet = filepath.Join(rootpath, "reposet", kind)
-	fmt.Printf("rootpath: %v\n", rootpath)
-	fmt.Printf("kind: %v\n", kind)
-	fmt.Printf("reposet: %v\n", reposet)
-
-	return reposet, err
-}
-
-// repoParamFilename returns the index repository parameters filename for a specified reposet.
-func repoParamFilename(reposet string) (filename string, err error) {
-
-	//
-	// local filesystem repository file folder hierarchy.
-	//
-	// index <repo root>, cfg parameter Indexer.Path, must be relative path
-	// 	  - index
-	// reposet root
-	// 	  - index/reposet
-	// reposet name
-	//	  - <kind>: string,    // repository kind (ex: blog)
-	// reposet root folder
-	// 	  - index/reposet/<kind>
-	// repo name, composed as:
-	//	  - window: uint64,    // creation time (Unix, seconds), sharding tag
-	//	  - area: uint8,       // area number, sharding tag
-	//	  - cat: uint8,        // category number, sharding tag
-	//	  - offset: int64,     // time since creation (seconds), recovery tag
-	// repo root folder
-	// 	  - index/reposet/<kind>/<reponame>
-	// repo specific files and sub-folders, cfg parameters are ignored for these
-	//	  - index/reposet/<kind>/<reponame>/corpus, cfg parameter Indexer.Corpus.Path
-	//	  - index/reposet/<kind>/<reponame>/metadata, cfg parameter Indexer.Corpus.Metadata
-	// 	  - params, repo params file, no corresponding cfg parameter
-	//
-	t := time.Now()	// repo create time
-	o := t.Sub(t)	// seconds since repo create (zero at creation time)
-	a := 0			// current area (zero ==> none)
-	c := 0			// current category (zero ==> none)
-
-	window := fmt.Sprintf("w%d", t.Unix())
-	area := fmt.Sprintf("-a%d", a+1)
-	category := fmt.Sprintf("-c%d", c+1)
-	offset := fmt.Sprintf("-o%d", o)
-
-	reponame := window + area + category + offset
-
-	filename = filepath.Join(reposet, reponame, "params")
-	fmt.Printf("reposet: %v\n", reposet)
-	fmt.Printf("reponame: %v\n", reponame)
-	fmt.Printf("filename: %v\n", filename)
-
-	return filename, err
-}
-
-// writeParamFile writes the index repository parameters from `cfg` into `filename`.
-func writeParamFile(filename string, cfg interface{}, opts *makeindexOpts) (bool, error) {
-        err := os.MkdirAll(filepath.Dir(filename), 0775)
-        if err != nil {
-                return false, err
-        }
-
-        f, err := atomicfile.New(filename, 0660)
-        if err != nil {
-                return false, err
-        }
-        defer f.Close()
-
-        return encode(f, cfg, opts)
-}
-
-// given repo params file, create repo subfolders
-// cfg path parameters are ignored for these
-//	  - Indexer.Corpus.Path
-//	  - Indexer.Corpus.Metadata
-func makeRepoSubDirs(filename string) error {
-
-	var i, c, m, r string
-
-	r = filepath.Dir(filename)
-	i = filepath.Join(r, "index")
-	c = filepath.Join(r, "corpus")
-	m = filepath.Join(r, "metadata")
-
-	fmt.Printf("index: %v\n", i)
-	fmt.Printf("corpus: %v\n", c)
-	fmt.Printf("metadata: %v\n", m)
-
-	if err := os.Mkdir(i, 0660); err != nil {
-		return err
-	}
-	if err := os.Mkdir(c, 0660); err != nil {
-		return err
-	}
-	if err := os.Mkdir(m, 0660); err != nil {
-		return err
-	}
-	return nil
-}
-
-func encode(w io.Writer, value interface{}, opts *makeindexOpts) (found bool, err error) {
-
-	// encode the index parameters file from configured properties
-	enc := xml.NewEncoder(w)
-	enc.Indent("  ", "    ")
-
-	var sel xml.StartElement
-	var snm xml.Name
-	snm.Space = ""
-	snm.Local = "parameters"
-	sel.Name = snm
-	if err := enc.EncodeToken(sel); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-
-	if found, err = makeIndexPathCorpusParams(value, enc); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-
-	if found, err = makeIndexMetadataParams(value, enc); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-
-	if found, err = makeIndexFieldsParams(value, enc, opts); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-
-	if found, err = makeIndexMemStemNormStopParams(value, enc); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-
-	if err := enc.EncodeToken(sel.End()); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-
-	if err := enc.Flush();  err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-	return found, err
-}
-
-func makeIndexPathCorpusParams(value interface{}, enc *xml.Encoder) (found bool, err error) {
-
-	if iconf, ok := value.(*idxconfig.IdxConfig); ok {
-		ix := iconf.Indexer
-
-		if ix.Path != "" {
-			found = true
-
-			var el xml.StartElement
-			var en xml.Name
-			en.Space = ""
-			en.Local = "index"
-			el.Name = en
-			if err := enc.EncodeElement(strings.ToLower(ix.Path),el); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-		} else {
-			err = errors.New("missing index path parameters, please use \"dms3fs index config\" command to verify configure.")
-			found = false
-			return found, err
-		}
-
-		if ix.Corpus != (idxconfig.Corpus{}) {
-			found = true
-
-			var cel xml.StartElement
-			var cen xml.Name
-			cen.Space = ""
-			cen.Local = "corpus"
-			cel.Name = cen
-			if err := enc.EncodeToken(cel); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-
-			if ix.Corpus.Path != "" {
-				var cpel xml.StartElement
-				var cpen xml.Name
-				cpen.Space = ""
-				cpen.Local = "path"
-				cpel.Name = cpen
-				if err := enc.EncodeElement(strings.ToLower(ix.Corpus.Path),cpel); err != nil {
-					fmt.Printf("error: %v\n", err)
-					found = false
-					return found, err
-				}
-			}
-
-			if ix.Corpus.Class != "" {
-				var ccel xml.StartElement
-				var ccen xml.Name
-				ccen.Space = ""
-				ccen.Local = "class"
-				ccel.Name = ccen
-				if err := enc.EncodeElement(strings.ToLower(ix.Corpus.Class),ccel); err != nil {
-					fmt.Printf("error: %v\n", err)
-					found = false
-					return found, err
-				}
-			}
-
-			if ix.Corpus.Metadata != "" {
-				var cmel xml.StartElement
-				var cmen xml.Name
-				cmen.Space = ""
-				cmen.Local = "metadata"
-				cmel.Name = cmen
-				if err := enc.EncodeElement(strings.ToLower(ix.Corpus.Metadata),cmel); err != nil {
-					fmt.Printf("error: %v\n", err)
-					found = false
-					return found, err
-				}
-			}
-
-			if err := enc.EncodeToken(cel.End()); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-		} else {
-			err = errors.New("missing index corpus parameters, please use \"dms3fs index config\" command to verify configure.")
-			found = false
-			return found, err
-		}
-	}
-
-	return found, err
-}
-
-func makeIndexMemStemNormStopParams(value interface{}, enc *xml.Encoder) (found bool, err error) {
-
-	if iconf, ok := value.(*idxconfig.IdxConfig); ok {
-		var n1, n2 xml.CharData
-		var c1 xml.Comment
-		var n1b, n2b, c1b []byte
-		n1s := bytes.NewBuffer(n1b)
-		n2s := bytes.NewBuffer(n2b)
-		c1s := bytes.NewBuffer(c1b)
-		n1s.WriteString("\n")
-		n2s.WriteString("\n\n")
-		c1s.WriteString(" optional index parameters ")
-		n1 = n1s.Bytes()
-		n2 = n2s.Bytes()
-		c1 = c1s.Bytes()
-
-		if err := enc.EncodeToken(n2); err != nil {
-			fmt.Printf("error: %v\n", err)
-			found = false
-			return found, err
-		}
-		if err := enc.EncodeToken(c1); err != nil {
-			fmt.Printf("error: %v\n", err)
-			found = false
-			return found, err
-		}
-		if err := enc.EncodeToken(n1); err != nil {
-			fmt.Printf("error: %v\n", err)
-			found = false
-			return found, err
-		}
-
-		ix := iconf.Indexer
-
-		if ix.Memory != "" {
-			var imel xml.StartElement
-			var imen xml.Name
-			imen.Space = ""
-			imen.Local = "memory"
-			imel.Name = imen
-			if err := enc.EncodeElement(strings.ToLower(ix.Memory),imel); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-		}
-
-		if ix.Stemmer != "" {
-			var isel xml.StartElement
-			var isen xml.Name
-			isen.Space = ""
-			isen.Local = "stemmer"
-			isel.Name = isen
-			if err := enc.EncodeToken(isel); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-
-			var isnel xml.StartElement
-			var isnen xml.Name
-			isnen.Space = ""
-			isnen.Local = "name"
-			isnel.Name = isnen
-			if err := enc.EncodeElement(strings.ToLower(ix.Stemmer),isnel); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-
-			if err := enc.EncodeToken(isel.End()); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-		}
-
-		var inel xml.StartElement
-		var inen xml.Name
-		inen.Space = ""
-		inen.Local = "normalize"
-		inel.Name = inen
-		if err := enc.EncodeElement(ix.Normalize,inel); err != nil {
-			fmt.Printf("error: %v\n", err)
-			found = false
-			return found, err
-		}
-
-		if len(ix.Stopper) > 0 {
-			found = true
-
-			var istel xml.StartElement
-			var isten xml.Name
-			isten.Space = ""
-			isten.Local = "stopper"
-			istel.Name = isten
-			if err := enc.EncodeToken(istel); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-
-			for swd := range ix.Stopper {
-				var swel xml.StartElement
-				var swen xml.Name
-				swen.Space = ""
-				swen.Local = "word"
-				swel.Name = swen
-				if err := enc.EncodeElement(strings.ToLower(ix.Stopper[swd]),swel); err != nil {
-					fmt.Printf("error: %v\n", err)
-					found = false
-					return found, err
-				}
-			}
-
-			if err := enc.EncodeToken(istel.End()); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-		}
-	}
-
-	return found, err
-}
-
-func makeIndexMetadataParams(value interface{}, enc *xml.Encoder) (found bool, err error) {
-
-	var n1, n2 xml.CharData
-	var c, c1, c2, c3, c4 xml.Comment
-	var n1b, n2b, c1b, c2b, c3b, c4b []byte
-	n1s := bytes.NewBuffer(n1b)
-	n2s := bytes.NewBuffer(n2b)
-	c1s := bytes.NewBuffer(c1b)
-	c2s := bytes.NewBuffer(c2b)
-	c3s := bytes.NewBuffer(c3b)
-	c4s := bytes.NewBuffer(c4b)
-	n1s.WriteString("\n")
-	n2s.WriteString("\n\n")
-	c1s.WriteString(" read-only life-cycle [system] metadata fields ")
-	c2s.WriteString(" read-write life-cycle [document] metadata fields ")
-	c3s.WriteString(" start of [document] kind common metadata fields ")
-	c4s.WriteString(" start of [document] kind specific metadata fields ")
-	n1 = n1s.Bytes()
-	n2 = n2s.Bytes()
-	c1 = c1s.Bytes()
-	c2 = c2s.Bytes()
-	c3 = c3s.Bytes()
-	c4 = c4s.Bytes()
-
-	rs := []string{
-		// read-only [system] metadata
-		"odmver",
-		"schver",
-		"kind",
-		"basetime",
-		"maxareas",
-		"maxcats",
-		"offset",
-		"app",
-		// read-write [application] metadata fields in the index paramaters file
-		"docno",
-		"docver",
-		// start of template specific fields - generated elsewhere
-	}
-
-	found = true
-
-	var imel xml.StartElement
-	var imnm xml.Name
-	imnm.Space = ""
-	imnm.Local = "metadata"
-	imel.Name = imnm
-	if err := enc.EncodeToken(imel); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-
-	for i := range rs {
-		switch strings.ToLower(rs[i]) {
-		case "odmver", "docno":
-			if err := enc.EncodeToken(n2); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-			if strings.ToLower(rs[i]) == "odmver" {
-				c = c1
+	PostRun: cmds.PostRunMap{
+		cmds.CLI: func(req *cmds.Request, re cmds.ResponseEmitter) cmds.ResponseEmitter {
+			reNext, res := cmds.NewChanResponsePair(req)
+			outChan := make(chan interface{})
+
+			sizeChan := make(chan int64, 1)
+
+			sizeFile, ok := req.Files.(files.SizeFile)
+			if ok {
+				// Could be slow.
+				go func() {
+					size, err := sizeFile.Size()
+					if err != nil {
+						log.Warningf("error getting files size: %s", err)
+						// see comment above
+						return
+					}
+
+					sizeChan <- size
+				}()
 			} else {
-				c = c2
+				// we don't need to error, the progress bar just
+				// won't know how big the files are
+				log.Warning("cannot determine size of input file")
 			}
-			if err := enc.EncodeToken(c); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
+
+			progressBar := func(wait chan struct{}) {
+				defer close(wait)
+
+				quiet, _ := req.Options[quietOptionName].(bool)
+				quieter := false
+
+				progress, _ := req.Options[progressOptionName].(bool)
+
+				var bar *pb.ProgressBar
+				if progress {
+					bar = pb.New64(0).SetUnits(pb.U_BYTES)
+					bar.ManualUpdate = true
+					bar.ShowTimeLeft = false
+					bar.ShowPercent = false
+					bar.Output = os.Stderr
+					bar.Start()
+				}
+
+				lastFile := ""
+				lastHash := ""
+				var totalProgress, prevFiles, lastBytes int64
+
+			LOOP:
+				for {
+					select {
+					case out, ok := <-outChan:
+						if !ok {
+							if quieter {
+								fmt.Fprintln(os.Stdout, lastHash)
+							}
+
+							break LOOP
+						}
+						output := out.(*coreunix.AddedObject)
+						if len(output.Hash) > 0 {
+							lastHash = output.Hash
+							if quieter {
+								continue
+							}
+
+							if progress {
+								// clear progress bar line before we print "added x" output
+								fmt.Fprintf(os.Stderr, "\033[2K\r")
+							}
+							if quiet {
+								fmt.Fprintf(os.Stdout, "%s\n", output.Hash)
+							} else {
+								fmt.Fprintf(os.Stdout, "added %s %s\n", output.Hash, output.Name)
+							}
+
+						} else {
+							if !progress {
+								continue
+							}
+
+							if len(lastFile) == 0 {
+								lastFile = output.Name
+							}
+							if output.Name != lastFile || output.Bytes < lastBytes {
+								prevFiles += lastBytes
+								lastFile = output.Name
+							}
+							lastBytes = output.Bytes
+							delta := prevFiles + lastBytes - totalProgress
+							totalProgress = bar.Add64(delta)
+						}
+
+						if progress {
+							bar.Update()
+						}
+					case size := <-sizeChan:
+						if progress {
+							bar.Total = size
+							bar.ShowPercent = true
+							bar.ShowBar = true
+							bar.ShowTimeLeft = true
+						}
+					case <-req.Context.Done():
+						// don't set or print error here, that happens in the goroutine below
+						return
+					}
+				}
 			}
-			if err := enc.EncodeToken(n1); err != nil {
-				fmt.Printf("error: %v\n", err)
-				found = false
-				return found, err
-			}
-		}
-		var fel xml.StartElement
-		var fen xml.Name
-		fen.Space = ""
-		fen.Local = "forward"
-		fel.Name = fen
-		if err := enc.EncodeElement(strings.ToLower(rs[i]),fel); err != nil {
-			fmt.Printf("error: %v\n", err)
-			found = false
-			return found, err
-		}
-	}
-	if err := enc.EncodeToken(n2); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-	if err := enc.EncodeToken(c3); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-	if err := enc.EncodeToken(n1); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
 
-	for i := range rs {
-		var bel xml.StartElement
-		var ben xml.Name
-		ben.Space = ""
-		ben.Local = "backward"
-		bel.Name = ben
-		if err := enc.EncodeElement(strings.ToLower(rs[i]),bel); err != nil {
-			fmt.Printf("error: %v\n", err)
-			found = false
-			return found, err
-		}
-	}
+			go func() {
+				// defer order important! First close outChan, then wait for output to finish, then close re
+				defer re.Close()
 
-	for i := range rs {
+				if e := res.Error(); e != nil {
+					defer close(outChan)
+					re.SetError(e.Message, e.Code)
+					return
+				}
 
-		var fdel xml.StartElement
-		var fdnm xml.Name
-		fdnm.Space = ""
-		fdnm.Local = "field"
-		fdel.Name = fdnm
-		if err := enc.EncodeToken(fdel); err != nil {
-			fmt.Printf("error: %v\n", err)
-			found = false
-			return found, err
-		}
+				wait := make(chan struct{})
+				go progressBar(wait)
 
-		var nel xml.StartElement
-		var nnm xml.Name
-		nnm.Space = ""
-		nnm.Local = "name"
-		nel.Name = nnm
-		if err := enc.EncodeElement(strings.ToLower(rs[i]),nel); err != nil {
-			fmt.Printf("error: %v\n", err)
-			found = false
-			return found, err
-		}
+				defer func() { <-wait }()
+				defer close(outChan)
 
-		if err := enc.EncodeToken(fdel.End()); err != nil {
-			fmt.Printf("error: %v\n", err)
-			found = false
-			return found, err
-		}
-	}
+				for {
+					v, err := res.Next()
+					if !cmds.HandleError(err, res, re) {
+						break
+					}
 
-	if err := enc.EncodeToken(imel.End()); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
+					select {
+					case outChan <- v:
+					case <-req.Context.Done():
+						re.SetError(req.Context.Err(), cmdkit.ErrNormal)
+						return
+					}
+				}
+			}()
 
-	if err := enc.EncodeToken(n2); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-	if err := enc.EncodeToken(c4); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-	if err := enc.EncodeToken(n1); err != nil {
-		fmt.Printf("error: %v\n", err)
-		found = false
-		return found, err
-	}
-	return found, err
+			return reNext
+		},
+	},
+	Type: coreunix.AddedObject{},
 }
 
-func makeIndexFieldsParams(value interface{}, enc *xml.Encoder, opts *makeindexOpts) (found bool, err error) {
 
-	if iconf, ok := value.(*idxconfig.IdxConfig); ok {
-		a := iconf.Metadata.Kind
+func addParamsFile(req *cmds.Request, res cmds.ResponseEmitter, env cmds.Environment, n *core.Dms3FsNode, fpath, reponame string) error {
 
-		for i := range a {
+	// following logic is lifted from core/commands/add
 
-			if a[i].Name == opts.key {
-				found = true
+	cfg, err := n.Repo.Config()
+	if err != nil {
+		return err
+	}
+	// check if repo will exceed storage limit if added
+	// TODO: this doesn't handle the case if the hashed file is already in blocks (deduplicated)
+	// TODO: conditional GC is disabled due to it is somehow not possible to pass the size to the daemon
+	//if err := corerepo.ConditionalGC(req.Context(), n, uint64(size)); err != nil {
+	//	res.SetError(err, cmdkit.ErrNormal)
+	//	return
+	//}
 
-				var kfel xml.StartElement
-				var kfnm xml.Name
-				kfnm.Space = ""
-				kfnm.Local = "field"
-				kfel.Name = kfnm
-				if err := enc.EncodeToken(kfel); err != nil {
-					fmt.Printf("error: %v\n", err)
-					found = false
-					return found, err
-				}
+	progress, _ := req.Options[progressOptionName].(bool)
+	trickle := false
+	wrap := false
+	hash := false
+	hidden := false
+	silent := false
+	chunker := "size-262144"
+	dopin := true
+	rawblks, rbset := false, false
+	nocopy := false
+	fscache := false
+	cidVer, cidVerSet := 1, true
+	hashFunStr := "sha2-256"
+	inline := false
+	inlineLimit := 32
 
-				var knel xml.StartElement
-				var knnm xml.Name
-				knnm.Space = ""
-				knnm.Local = "name"
-				knel.Name = knnm
-				if err := enc.EncodeElement(strings.ToLower(opts.key),knel); err != nil {
-					fmt.Printf("error: %v\n", err)
-					found = false
-					return found, err
-				}
+	// The arguments are subject to the following constraints.
+	//
+	// nocopy -> filestoreEnabled
+	// nocopy -> rawblocks
+	// (hash != sha2-256) -> cidv1
 
-				if err := enc.EncodeToken(kfel.End()); err != nil {
-					fmt.Printf("error: %v\n", err)
-					found = false
-					return found, err
-				}
+	// NOTE: 'rawblocks -> cidv1' is missing. Legacy reasons.
 
-				for f := range a[i].Field {
+	// nocopy -> filestoreEnabled
+	if nocopy && !cfg.Experimental.FilestoreEnabled {
+		return filestore.ErrFilestoreNotEnabled
+	}
 
-					var fdel xml.StartElement
-					var fdnm xml.Name
-					fdnm.Space = ""
-					fdnm.Local = "field"
-					fdel.Name = fdnm
-					if err := enc.EncodeToken(fdel); err != nil {
-						fmt.Printf("error: %v\n", err)
-						found = false
-						return found, err
-					}
+	// nocopy -> rawblocks
+	if nocopy && !rawblks {
+		// fixed?
+		if rbset {
+			return fmt.Errorf("nocopy option requires '--raw-leaves' to be enabled as well")
+		}
+		// No, satisfy mandatory constraint.
+		rawblks = true
+	}
 
-					var nel xml.StartElement
-					var nnm xml.Name
-					nnm.Space = ""
-					nnm.Local = "name"
-					nel.Name = nnm
-					if err := enc.EncodeElement(strings.ToLower(a[i].Field[f]),nel); err != nil {
-						fmt.Printf("error: %v\n", err)
-						found = false
-						return found, err
-					}
+	// (hash != "sha2-256") -> CIDv1
+	if hashFunStr != "sha2-256" && cidVer == 0 {
+		if cidVerSet {
+			return errors.New("CIDv0 only supports sha2-256")
+		}
+		cidVer = 1
+	}
 
-					if err := enc.EncodeToken(fdel.End()); err != nil {
-						fmt.Printf("error: %v\n", err)
-						found = false
-						return found, err
-					}
-				}
-			}
+	// cidV1 -> raw blocks (by default)
+	if cidVer > 0 && !rbset {
+		rawblks = true
+	}
+
+	prefix, err := dag.PrefixForCidVersion(cidVer)
+	if err != nil {
+		return err
+	}
+
+	hashFunCode, ok := mh.Names[strings.ToLower(hashFunStr)]
+	if !ok {
+		return fmt.Errorf("unrecognized hash function: %s", strings.ToLower(hashFunStr))
+	}
+
+	prefix.MhType = hashFunCode
+	prefix.MhLength = -1
+
+	if hash {
+		nilnode, err := core.NewNode(n.Context(), &core.BuildCfg{
+			//TODO: need this to be true or all files
+			// hashed will be stored in memory!
+			NilRepo: true,
+		})
+		if err != nil {
+			return err
+		}
+		n = nilnode
+	}
+
+	addblockstore := n.Blockstore
+	if !(fscache || nocopy) {
+		addblockstore = bstore.NewGCBlockstore(n.BaseBlocks, n.GCLocker)
+	}
+
+	exch := n.Exchange
+	local, _ := req.Options["local"].(bool)
+	if local {
+		exch = offline.Exchange(addblockstore)
+	}
+
+	bserv := blockservice.New(addblockstore, exch) // hash security 001
+	dserv := dag.NewDAGService(bserv)
+
+	outChan := make(chan interface{}, adderOutChanSize)
+
+	fileAdder, err := coreunix.NewAdder(req.Context, n.Pinning, n.Blockstore, dserv)
+	if err != nil {
+		return err
+	}
+
+	fileAdder.Out = outChan
+	fileAdder.Chunker = chunker
+	fileAdder.Progress = progress
+	fileAdder.Hidden = hidden
+	fileAdder.Trickle = trickle
+	fileAdder.Wrap = wrap
+	fileAdder.Pin = dopin
+	fileAdder.Silent = silent
+	fileAdder.RawLeaves = rawblks
+	fileAdder.NoCopy = nocopy
+	fileAdder.CidBuilder = prefix
+
+	if inline {
+		fileAdder.CidBuilder = cidutil.InlineBuilder{
+			Builder: fileAdder.CidBuilder,
+			Limit:   inlineLimit,
 		}
 	}
 
-	return found, err
+	if hash {
+		md := dagtest.Mock()
+		emptyDirNode := ft.EmptyDirNode()
+		// Use the same prefix for the "empty" MFS root as for the file adder.
+		emptyDirNode.SetCidBuilder(fileAdder.CidBuilder)
+		mr, err := mfs.NewRoot(req.Context, md, emptyDirNode, nil)
+		if err != nil {
+			return err
+		}
+
+		fileAdder.SetMfsRoot(mr)
+	}
+
+	addAndPin := func(f files.File) error {
+
+		file := f
+
+		if err := fileAdder.AddFile(file); err != nil {
+			return err
+		}
+
+		// copy intermediary nodes from editor to our actual dagservice
+		ldnode, err := fileAdder.Finalize()
+		if err != nil {
+			return err
+		}
+
+		err = fileAdder.PinRoot()
+		if err != nil {
+			return err
+		}
+
+		api, err := cmdenv.GetApi(env)
+		if err != nil {
+			return err
+		}
+
+		// create new reposet DAG tree
+		err = createRepoNode(req, res, env, n, api, file.FullPath(), reponame, ldnode, fileAdder.Out)
+		if err != nil {
+			return err
+		}
+
+		return err
+	}
+
+	errCh := make(chan error)
+	go func() {
+		var err error
+		defer func() { errCh <- err }()
+		defer close(outChan)
+
+        fpath = filepath.ToSlash(filepath.Clean(fpath))
+
+        stat, err := os.Lstat(fpath)
+        if err != nil {
+                return
+        }
+
+        if stat.IsDir() {
+			err = fmt.Errorf("Invalid params file path '%s', path must not be a directory", fpath)
+            return
+        }
+
+        f, err := files.NewSerialFile(path.Base(fpath), fpath, false, stat)
+		if err != nil {
+                return
+        }
+
+		err = addAndPin(f)
+
+		// TODO: instantiate and serve the index repository
+
+	}()
+
+	defer res.Close()
+
+	err = res.Emit(outChan)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	err = <-errCh
+	if err != nil {
+		return err
+	}
+	return err
 }
+
+func createRepoNode(req *cmds.Request, res cmds.ResponseEmitter, env cmds.Environment, n *core.Dms3FsNode, api coreiface.CoreAPI, paramsfile, reponame string, paramscid dms3ld.Node, outchan chan interface{}) error {
+
+	ctx := req.Context
+
+	defer n.Blockstore.PinLock().Unlock()
+
+	ct, err := time.Parse(time.RFC3339, req.Options[createdAtName].(string))
+	if err != nil {
+        return err
+    }
+	createdAt := uint64(ct.Unix())
+
+	rp := idxufs.NewRepoProps()
+
+	_, pfname := path.Split(paramsfile)	// pfname is params file name
+
+    rp.SetType(req.Options[infoClassName].(string))
+    rp.SetKind(req.Options[kindOptionName].(string))
+    rp.SetName(reponame)	// includes area/cat/offset matching values below
+    rp.SetOffset(0)			// offset is zero at creation time
+    rp.SetArea(1)			// 0 implies N/A
+    rp.SetCat(1)			// 0 implies N/A
+    rp.SetPath(paramsfile)
+
+	sr, err := idxufs.NewStoreRoot(ctx, n.DAG, nil)
+    if err != nil {
+		return err
+    }
+
+    rpid, err := sr.AddProps(reponame, rp)
+    if err != nil {
+		return err
+    }
+
+	outchan <- &coreunix.AddedObject{
+		Hash: rpid.String(),
+    	Name: reponame,
+    	Size: strconv.FormatUint(0, 10),
+	}
+
+	rps := idxufs.NewReposetProps()
+
+    rps.SetType(req.Options[infoClassName].(string))
+    rps.SetKind(req.Options[kindOptionName].(string))
+    rps.SetName(req.Options[nameOptionName].(string))
+    rps.SetCreatedAt(createdAt)
+    rps.SetMaxAreas(64)			// TODO: sould be configurable, per indexer or kind
+    rps.SetMaxCats(64)			// TODO: sould be configurable, per indexer or kind
+    rps.SetMaxDocs(50000000)	// TODO: sould be configurable, per indexer or kind
+
+	reposetName := "reposetprops"
+    rpsid, err := sr.AddProps(reposetName, rps)
+    if err != nil {
+		return err
+    }
+
+	outchan <- &coreunix.AddedObject{
+		Hash: rpsid.String(),
+    	Name: reposetName,
+    	Size: strconv.FormatUint(0, 10),
+	}
+
+	rootdir := sr.GetDirectory()
+
+	err = rootdir.AddChild(pfname, paramscid)
+	if err != nil {
+		return nil
+	}
+
+	nd, err := rootdir.GetNode() // adds rootdir to dag
+	if err != nil {
+		return nil
+	}
+
+	// pin nodes
+	n.Pinning.PinWithMode(nd.Cid(), pin.Recursive)
+	err = n.Pinning.Flush()
+	if err != nil {
+		return err
+	}
+
+	outchan <- &coreunix.AddedObject{
+		Hash: nd.Cid().String(),
+    	Name: "reposetdir",
+    	Size: strconv.FormatUint(0, 10),
+	}
+
+	// set the KV store to use, where we track reposet cids.
+	// this enables repo lookup by type, kind, name, etc...
+	idxkvs.InitIndexKVStore(n.Repo.Datastore())
+	dstore := idxkvs.GetIndexKVStore()
+
+	var key ds.Key
+	var value []byte
+
+	iopt, _ := req.Options[infoClassName].(string)
+	kopt, _ := req.Options[kindOptionName].(string)
+	nopt, _ := req.Options[nameOptionName].(string)
+
+	if key, err = idxkvs.GetRepoSetKey(iopt, kopt, nopt); err != nil {
+		return errors.New(fmt.Sprintf("could not lookup reposet key. error: %s\n", err))
+	}
+
+	v := idxkvs.NewRps()
+	v.SetCid(nd.Cid())
+
+	if value, err = v.Marshal(); err != nil {
+		return errors.New(fmt.Sprintf("could not marshal reposet value. error: %s\n", err))
+	}
+	if err = dstore.Put(key, value); err != nil {
+		return errors.New(fmt.Sprintf("could not put reposet key value. error: %s\n", err))
+	}
+	log.Debugf("reposet key %v value %v\n", key, value)
+
+	return err
+
+}
+
+
 
 type RepoDoc struct{
 	content string
@@ -980,10 +785,8 @@ The content kind is named using a locally unique key ex: blog.
 Use the create document command to create an empty document template
 with all the fields pre-generated.
 
-	dms3fs index mkdoc -k=blog -x > b.xml # edit document, then
+	dms3fs index mkdoc -k=blog > b.xml    # edit document, then
 	dms3fs index addoc b.xml <path>       # add blog to reposet
-
-Use --xml option to convey repository input document format.
 
 `,
 	},
@@ -992,7 +795,6 @@ Use --xml option to convey repository input document format.
 	},
 	Options: []cmdkit.Option{
 		cmdkit.StringOption("kind", "k", "keyword for kind of content, ex: \"blog\" ."),
-		cmdkit.BoolOption("xml", "x", "xml encoding format."),
 	},
 	Run: func(req *cmds.Request, res cmds.ResponseEmitter, env cmds.Environment) {
 		n, err := cmdenv.GetNode(env)
@@ -1001,39 +803,32 @@ Use --xml option to convey repository input document format.
 			return
 		}
 
-		mkopts := new(makeindexOpts)
-
-		mkopts.key, _ = req.Options["kind"].(string)
-		if mkopts.key == "" {
+		kopt, _ := req.Options[kindOptionName].(string)
+		if kopt == "" {
 			res.SetError(errors.New("kind of content key must be specified."), cmdkit.ErrNormal)
 			return
 		}
-		log.Debugf("kind option value %s", mkopts.key)
+		log.Debugf("kind option value %s", kopt)
 
-		x, _ := req.Options["xml"].(bool)
-		if !x {
-			res.SetError(errors.New("encoding format must be specified."), cmdkit.ErrNormal)
-			return
-		} else {
-			mkopts.enc = "xml"
-		}
-		log.Debugf("xml format option %s", mkopts.enc)
-
-		ctx := req.Context
-
-        cfg, err := n.Repo.IdxConfig()
+        icfg, err := n.Repo.IdxConfig()
 		if err != nil {
 			res.SetError(errors.New("could not load index config."), cmdkit.ErrNormal)
 			return
 		}
 
-		output, err := makeDoc(ctx, n, *cfg, mkopts)
+		var repodoc *RepoDoc
+
+		output, err := idxlfs.MakeDoc(*icfg, kopt)
 		if err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
 			return
+		} else {
+			repodoc = &RepoDoc{
+				content: output,
+			}
 		}
 
-		cmds.EmitOnce(res, output)
+		cmds.EmitOnce(res, repodoc)
 
 	},
 	Encoders: cmds.EncoderMap{
@@ -1048,63 +843,4 @@ Use --xml option to convey repository input document format.
 		}),
 	},
 	Type: RepoDoc{},
-}
-
-type makedocOpts struct {
-	key string
-	enc string
-}
-
-func makeDoc(ctx context.Context, n *core.Dms3FsNode, iconf idxconfig.IdxConfig, opts *makeindexOpts) (*RepoDoc, error) {
-
-	var found bool = false
-
-	var b []byte
-	w := bytes.NewBuffer(b)
-
-	a := iconf.Metadata.Kind
-	for i := range a {
-
-		if a[i].Name == opts.key {
-			found = true
-
-			enc := xml.NewEncoder(w)
-			enc.Indent("  ", "    ")
-			var sel xml.StartElement
-			var snm xml.Name
-			snm.Space = ""
-			snm.Local = opts.key
-			sel.Name = snm
-
-			if err := enc.EncodeToken(sel); err != nil {
-				fmt.Printf("error: %v\n", err)
-			}
-			for f := range a[i].Field {
-				var el xml.StartElement
-				var en xml.Name
-				en.Space = ""
-				en.Local = strings.ToLower(a[i].Field[f])
-				el.Name = en
-				if err := enc.EncodeElement("",el); err != nil {
-					fmt.Printf("error: %v\n", err)
-				}
-			}
-			if err := enc.EncodeToken(sel.End()); err != nil {
-				fmt.Printf("error: %v\n", err)
-			}
-			if err := enc.Flush();  err != nil {
-				fmt.Printf("error: %v\n", err)
-			}
-		}
-	}
-
-	if found {
-		return &RepoDoc{
-			content: w.String(),
-		}, nil
-	} else {
-		return &RepoDoc{
-			content: "specified kind is not found, please use \"dms3fs index config\" command to configure.",
-		}, nil
-	}
 }

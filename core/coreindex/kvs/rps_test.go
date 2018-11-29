@@ -2,6 +2,7 @@ package coreindex
 
 import (
     "fmt"
+    "strconv"
     "strings"
     "testing"
 
@@ -11,56 +12,51 @@ import (
     mh "github.com/dms3-mft/go-multihash"
 )
 
-func TestCorpusMarshal(t *testing.T) {
+func TestRpsMarshal(t *testing.T) {
 
     data := []byte("this is some test content")
     hash, _ := mh.Sum(data, mh.SHA2_256, -1)
     id := cid.NewCidV1(cid.Raw, hash)
 
-    c1 := corpusProps{
-        Rclass: "testclass",
-        Rkind:  "testkind",
-        Rindex: int64(55),
-        Rcid:   id,
+    r := rps{
+        Cid: id,
     }
 
-    if b, err := c1.Marshal(); err != nil {
+    if b, err := r.Marshal(); err != nil {
         t.Fatal(err)
     } else {
+        //fmt.Printf("%+v", b)
 
-        c2 := corpusProps{
-            Rclass: "",
-            Rkind:  "",
-            Rindex: 0,
-            Rcid:   nil,
+        r2 := rps{
+            Cid: nil,
         }
 
-        if err := c2.Unmarshal(b); err != nil {
+        if err := r2.Unmarshal(b); err != nil {
             t.Fatal(err)
         } else {
-            if !c2.Equals(&c1) {
+            if !r.Equals(&r2) {
                 t.Fatal(err)
+            } else {
+                //fmt.Printf("%+v", r)
             }
         }
     }
 }
 
-func TestCorpusPutGetDel(t *testing.T) {
+func TestRpsPutGetDel(t *testing.T) {
+
+    const testreposettype string = "testreposettype"
+    const testreposetkind string = "testreposetkind"
+    const testreposetname string = "testreposetname"
 
     dstore := GetIndexKVStore()
 
-    c1 := corpusProps{
-        Rclass: "testkeystore",
-        Rkind:  "testkeykind",
-        Rindex: int64(35),
-        Rcid:   nil,
+    r := rps{
+        Cid: nil,
     }
 
-    c2 := corpusProps{
-        Rclass: "",
-        Rkind:  "",
-        Rindex: 0,
-        Rcid:   nil,
+    r2 := rps{
+        Cid: nil,
     }
 
 	var i int64
@@ -75,14 +71,14 @@ func TestCorpusPutGetDel(t *testing.T) {
 		if id, _ := cid.NewPrefixV1(cid.Raw, mh.ID).Sum([]byte(sb.String())); id == nil {
             t.Fatal(fmt.Errorf("cannot compute cid corpus property"))
         } else {
-            c1.Rcid = id
+            r.Cid = id
         }
 
-        if value, err = c1.Marshal(); err != nil {
+        if value, err = r.Marshal(); err != nil {
             t.Fatal(err)
         }
 
-        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
+        if key, err = GetRepoSetKey(testreposettype, testreposetkind, testreposetname + strconv.FormatInt(i, 10)); err != nil {
             t.Fatal(err)
         }
 
@@ -95,35 +91,30 @@ func TestCorpusPutGetDel(t *testing.T) {
         sb.Reset()
 		fmt.Fprintf(&sb, "this is some test key %d", i)
 		if id, _ := cid.NewPrefixV1(cid.Raw, mh.ID).Sum([]byte(sb.String())); id == nil {
-            //return fmt.Errorf("cannot compute cid corpus property: %v", err)
             t.Fatal(fmt.Errorf("cannot compute cid corpus property"))
         } else {
-            c1.Rcid = id
+            r.Cid = id
         }
 
-        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
-            //return fmt.Errorf("cannot get key for corpus properties: %v", err)
+        if key, err = GetRepoSetKey(testreposettype, testreposetkind, testreposetname + strconv.FormatInt(i, 10)); err != nil {
             t.Fatal(err)
         }
 
         if value, err = dstore.Get(key); err != nil {
-            //return fmt.Errorf("cannot get corpus properties: %v", err)
             t.Fatal(err)
 		}
 
-        if err = c2.Unmarshal(value); err != nil {
-            //return nil, fmt.Errorf("cannot unmarshal corpus properties: %v", err)
+        if err = r2.Unmarshal(value); err != nil {
             t.Fatal(err)
         }
 
-        if !c2.Equals(&c1) {
+        if !r.Equals(&r2) {
             t.Fatal(fmt.Errorf("put/get value mistmatch corpus property"))
         }
 	}
 
 	for i = 0; i < 100; i++ {
-        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
-            //return fmt.Errorf("cannot get key for corpus properties: %v", err)
+        if key, err = GetRepoSetKey(testreposettype, testreposetkind, testreposetname + strconv.FormatInt(i, 10)); err != nil {
             t.Fatal(err)
         }
 
@@ -134,18 +125,19 @@ func TestCorpusPutGetDel(t *testing.T) {
 	}
 }
 
-func TestCorpusHasQuery(t *testing.T) {
+func TestRpsHasQuery(t *testing.T) {
+
+    const testreposettype string = "testreposettype"
+    const testreposetkind string = "testreposetkind"
+    const testreposetname string = "testreposetname"
 
     dstore := GetIndexKVStore()
 
-    c1 := corpusProps{
-        Rclass: "testkeystore",
-        Rkind:  "testkeykind",
-        Rindex: int64(35),
-        Rcid:   nil,
+    r := rps{
+        Cid: nil,
     }
 
-	var i int64
+    var i int64
 	var sb strings.Builder
     var key ds.Key
     var value []byte
@@ -161,14 +153,14 @@ func TestCorpusHasQuery(t *testing.T) {
 		if id, _ := cid.NewPrefixV1(cid.Raw, mh.ID).Sum([]byte(sb.String())); id == nil {
             t.Fatal(fmt.Errorf("cannot compute cid corpus property"))
         } else {
-            c1.Rcid = id
+            r.Cid = id
         }
 
-        if value, err = c1.Marshal(); err != nil {
+        if value, err = r.Marshal(); err != nil {
             t.Fatal(err)
         }
 
-        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
+        if key, err = GetRepoSetKey(testreposettype, testreposetkind, testreposetname + strconv.FormatInt(i, 10)); err != nil {
             t.Fatal(err)
         }
 
@@ -181,7 +173,7 @@ func TestCorpusHasQuery(t *testing.T) {
 
     // verify store properly responds to Has requests
 	for i = 0; i < 100; i++ {
-        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
+        if key, err = GetRepoSetKey(testreposettype, testreposetkind, testreposetname + strconv.FormatInt(i, 10)); err != nil {
             t.Fatal(err)
         }
 
@@ -211,7 +203,7 @@ OuterLoop:
                 if result.Error != nil {
                     t.Fatal(fmt.Errorf("Query returned internal error %v\n.", err))
                 }
-                r2 := repoProps{}
+                r2 := rps{}
                 if err := r2.Unmarshal(result.Value); err != nil {
                     t.Fatal(err)
                     t.Fatal(fmt.Errorf("cannot unmarshal Query returned value."))
@@ -241,10 +233,12 @@ OuterLoop:
     }
 
     for i = 0; i < 100; i++ {
-        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
+        if key, err = GetRepoSetKey(testreposettype, testreposetkind, testreposetname + strconv.FormatInt(i, 10)); err != nil {
             t.Fatal(err)
         }
+
 		if err = dstore.Delete(key); err != nil {
+            //return fmt.Errorf("cannot delete corpus properties: %v", err)
             t.Fatal(err)
 		}
 	}

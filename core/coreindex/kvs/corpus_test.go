@@ -2,86 +2,87 @@ package coreindex
 
 import (
     "fmt"
+    "strings"
     "testing"
 
+    cid "github.com/dms3-fs/go-cid"
     ds "github.com/dms3-fs/go-datastore"
     dsquery "github.com/dms3-fs/go-datastore/query"
+    mh "github.com/dms3-mft/go-multihash"
 )
 
-func TestRepoMarshal(t *testing.T) {
+func TestCorpusMarshal(t *testing.T) {
 
-    rp := repoProps{
-        Suffix: suffix{
-            Offset: 60,
-            Area: 51,
-            Category: 17,
-        },
-        Docs: 123456,
+    data := []byte("this is some test content")
+    hash, _ := mh.Sum(data, mh.SHA2_256, -1)
+    id := cid.NewCidV1(cid.Raw, hash)
+
+    c1 := corpusProps{
+        Rclass: "testclass",
+        Rkind:  "testkind",
+        Rindex: int64(55),
+        Rcid:   id,
     }
 
-    if b, err := rp.Marshal(); err != nil {
+    if b, err := c1.Marshal(); err != nil {
         t.Fatal(err)
     } else {
-        //fmt.Printf("marshalled repo props %+v", b)
 
-        rp2 := repoProps{
-            Suffix: suffix{
-                Offset: 0,
-                Area: 0,
-                Category: 0,
-            },
-            Docs: 0,
+        c2 := corpusProps{
+            Rclass: "",
+            Rkind:  "",
+            Rindex: 0,
+            Rcid:   nil,
         }
 
-        if err := rp2.Unmarshal(b); err != nil {
+        if err := c2.Unmarshal(b); err != nil {
             t.Fatal(err)
         } else {
-            if !rp.Equals(&rp2) {
+            if !c2.Equals(&c1) {
                 t.Fatal(err)
-            } else {
-                //fmt.Printf("unmarshalled repo props %+v", rp2)
             }
         }
     }
 }
 
-func TestRepoPutGetDel(t *testing.T) {
-
-    const testclass string = "testclass"
-    const testkind string = "testkind"
+func TestCorpusPutGetDel(t *testing.T) {
 
     dstore := GetIndexKVStore()
 
-    rp := repoProps{
-        Suffix: suffix{
-            Offset: 60,
-            Area: 51,
-            Category: 17,
-        },
-        Docs: 123456,
+    c1 := corpusProps{
+        Rclass: "testkeystore",
+        Rkind:  "testkeykind",
+        Rindex: int64(35),
+        Rcid:   nil,
     }
 
-    rp2 := repoProps{
-        Suffix: suffix{
-            Offset: 0,
-            Area: 0,
-            Category: 0,
-        },
-        Docs: 0,
+    c2 := corpusProps{
+        Rclass: "",
+        Rkind:  "",
+        Rindex: 0,
+        Rcid:   nil,
     }
 
 	var i int64
+	var sb strings.Builder
     var key ds.Key
     var value []byte
     var err error
 
 	for i = 0; i < 100; i++ {
+        sb.Reset()
+		fmt.Fprintf(&sb, "this is some test key %d", i)
+		if id, _ := cid.NewPrefixV1(cid.Raw, mh.ID).Sum([]byte(sb.String())); id == nil {
+            t.Fatal(fmt.Errorf("cannot compute cid corpus property"))
+        } else {
+            c1.Rcid = id
+        }
 
-        if key, err = GetRepoKey(testclass, testkind, i); err != nil {
+        if value, err = c1.Marshal(); err != nil {
             t.Fatal(err)
         }
 
-        if value, err = rp.Marshal(); err != nil {
+        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
             t.Fatal(err)
         }
 
@@ -91,52 +92,61 @@ func TestRepoPutGetDel(t *testing.T) {
 	}
 
 	for i = 0; i < 100; i++ {
+        sb.Reset()
+		fmt.Fprintf(&sb, "this is some test key %d", i)
+		if id, _ := cid.NewPrefixV1(cid.Raw, mh.ID).Sum([]byte(sb.String())); id == nil {
+            //return fmt.Errorf("cannot compute cid corpus property: %v", err)
+            t.Fatal(fmt.Errorf("cannot compute cid corpus property"))
+        } else {
+            c1.Rcid = id
+        }
 
-        if key, err = GetRepoKey(testclass, testkind, i); err != nil {
+        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
+            //return fmt.Errorf("cannot get key for corpus properties: %v", err)
             t.Fatal(err)
         }
 
         if value, err = dstore.Get(key); err != nil {
+            //return fmt.Errorf("cannot get corpus properties: %v", err)
             t.Fatal(err)
 		}
 
-        if err = rp2.Unmarshal(value); err != nil {
+        if err = c2.Unmarshal(value); err != nil {
+            //return nil, fmt.Errorf("cannot unmarshal corpus properties: %v", err)
             t.Fatal(err)
         }
 
-        if !rp.Equals(&rp2) {
+        if !c2.Equals(&c1) {
             t.Fatal(fmt.Errorf("put/get value mistmatch corpus property"))
         }
 	}
 
 	for i = 0; i < 100; i++ {
-        if key, err = GetRepoKey(testclass, testkind, i); err != nil {
+        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
+            //return fmt.Errorf("cannot get key for corpus properties: %v", err)
             t.Fatal(err)
         }
 
 		if err = dstore.Delete(key); err != nil {
+            //return fmt.Errorf("cannot delete corpus properties: %v", err)
             t.Fatal(err)
 		}
 	}
 }
 
-func TestRepoHasQuery(t *testing.T) {
-
-    const testclass string = "testclass"
-    const testkind string = "testkind"
+func TestCorpusHasQuery(t *testing.T) {
 
     dstore := GetIndexKVStore()
 
-    rp := repoProps{
-        Suffix: suffix{
-            Offset: 160,
-            Area: 21,
-            Category: 7,
-        },
-        Docs: 654321,
+    c1 := corpusProps{
+        Rclass: "testkeystore",
+        Rkind:  "testkeykind",
+        Rindex: int64(35),
+        Rcid:   nil,
     }
 
 	var i int64
+	var sb strings.Builder
     var key ds.Key
     var value []byte
     var err error
@@ -146,12 +156,19 @@ func TestRepoHasQuery(t *testing.T) {
     var keys map[ds.Key][]byte = make(map[ds.Key][]byte,100)
 
 	for i = 0; i < 100; i++ {
+        sb.Reset()
+		fmt.Fprintf(&sb, "this is some test key %d", i)
+		if id, _ := cid.NewPrefixV1(cid.Raw, mh.ID).Sum([]byte(sb.String())); id == nil {
+            t.Fatal(fmt.Errorf("cannot compute cid corpus property"))
+        } else {
+            c1.Rcid = id
+        }
 
-        if key, err = GetRepoKey(testclass, testkind, i); err != nil {
+        if value, err = c1.Marshal(); err != nil {
             t.Fatal(err)
         }
 
-        if value, err = rp.Marshal(); err != nil {
+        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
             t.Fatal(err)
         }
 
@@ -164,8 +181,7 @@ func TestRepoHasQuery(t *testing.T) {
 
     // verify store properly responds to Has requests
 	for i = 0; i < 100; i++ {
-
-        if key, err = GetRepoKey(testclass, testkind, i); err != nil {
+        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
             t.Fatal(err)
         }
 
@@ -195,8 +211,8 @@ OuterLoop:
                 if result.Error != nil {
                     t.Fatal(fmt.Errorf("Query returned internal error %v\n.", err))
                 }
-                rp2 := repoProps{}
-                if err := rp2.Unmarshal(result.Value); err != nil {
+                r2 := corpusProps{}
+                if err := r2.Unmarshal(result.Value); err != nil {
                     t.Fatal(err)
                     t.Fatal(fmt.Errorf("cannot unmarshal Query returned value."))
                 }
@@ -224,11 +240,10 @@ OuterLoop:
         t.Fatal(fmt.Errorf("Query did not return all stored records."))
     }
 
-	for i = 0; i < 100; i++ {
-        if key, err = GetRepoKey(testclass, testkind, i); err != nil {
+    for i = 0; i < 100; i++ {
+        if key, err = GetDocKey(c1.Rclass, c1.Rkind, c1.Rindex, i); err != nil {
             t.Fatal(err)
         }
-
 		if err = dstore.Delete(key); err != nil {
             t.Fatal(err)
 		}

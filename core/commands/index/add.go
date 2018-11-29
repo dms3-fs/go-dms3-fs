@@ -16,7 +16,7 @@ import (
 	cmdkit "github.com/dms3-fs/go-fs-cmdkit"
 	path "github.com/dms3-fs/go-path"
 
-	corpus "github.com/dms3-fs/go-dms3-fs/core/coreindex"
+	idxkvs "github.com/dms3-fs/go-dms3-fs/core/coreindex/kvs"
     cid "github.com/dms3-fs/go-cid"
 	ds "github.com/dms3-fs/go-datastore"
     mh "github.com/dms3-mft/go-multihash"
@@ -118,6 +118,10 @@ Use --xml option to convey repository input document format.
 	Type: RepoPath{},
 }
 
+type RepoPath struct{
+       path string
+}
+
 type addocOpts struct {
 	q bool
 }
@@ -125,14 +129,14 @@ type addocOpts struct {
 func addDoc(ctx context.Context, n *core.Dms3FsNode, ref path.Path, opts *addocOpts) (*RepoPath, error) {
 
 	// set the KV store to use
-	corpus.InitIndexKVStore(n.Repo.Datastore())
-	dstore := corpus.GetIndexKVStore()
+	idxkvs.InitIndexKVStore(n.Repo.Datastore())
+	dstore := idxkvs.GetIndexKVStore()
 
 	rc := "infostore"
 	rk := "blog"
 	ri := int64(0)
-	c1 := corpus.NewCorpusProps(rc, rk, ri, &cid.Cid{})
-	c2 := corpus.NewCorpusProps("", "", 0, &cid.Cid{})
+	c1 := idxkvs.NewCorpusProps(rc, rk, ri, &cid.Cid{})
+	c2 := idxkvs.NewCorpusProps("", "", 0, &cid.Cid{})
 
 	var i int64
 	var sb strings.Builder
@@ -153,7 +157,7 @@ func addDoc(ctx context.Context, n *core.Dms3FsNode, ref path.Path, opts *addocO
 			return nil, err
         }
 
-        if key, err = corpus.GetDocKey(c1.GetRclass(), c1.GetRkind(), c1.GetRindex(), i); err != nil {
+        if key, err = idxkvs.GetDocKey(c1.GetRclass(), c1.GetRkind(), c1.GetRindex(), i); err != nil {
 			return nil, err
         }
 
@@ -171,7 +175,7 @@ func addDoc(ctx context.Context, n *core.Dms3FsNode, ref path.Path, opts *addocO
 			c1.SetRcid(id)
         }
 
-        if key, err = corpus.GetDocKey(c1.GetRclass(), c1.GetRkind(), c1.GetRindex(), i); err != nil {
+        if key, err = idxkvs.GetDocKey(c1.GetRclass(), c1.GetRkind(), c1.GetRindex(), i); err != nil {
             return nil, fmt.Errorf("cannot get key for corpus properties: %v", err)
         }
 
@@ -189,7 +193,7 @@ func addDoc(ctx context.Context, n *core.Dms3FsNode, ref path.Path, opts *addocO
 	}
 
 	for i = 0; i < 100; i++ {
-		if key, err = corpus.GetDocKey(c1.GetRclass(), c1.GetRkind(), c1.GetRindex(), i); err != nil {
+		if key, err = idxkvs.GetDocKey(c1.GetRclass(), c1.GetRkind(), c1.GetRindex(), i); err != nil {
             return nil, fmt.Errorf("cannot get key for corpus properties: %v", err)
         }
 

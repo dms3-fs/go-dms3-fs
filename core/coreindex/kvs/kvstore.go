@@ -55,7 +55,7 @@ func (kvs *kvstore) Get(key ds.Key) (value []byte, err error) {
 
     //log.Debugf("Get key %v\n", key)
     if value, err := kvs.d.Get(key); err != nil {
-        return nil, fmt.Errorf("cannot store key value properties: %v", err)
+        return nil, fmt.Errorf("cannot get key value properties: %v", err)
     } else {
         return value, nil
     }
